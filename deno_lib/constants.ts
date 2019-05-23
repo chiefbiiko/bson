@@ -1,0 +1,36 @@
+export const BSON_INT32_MAX: number = 0x7fffffff;
+export const BSON_INT32_MIN: number = -0x80000000;
+export const BSON_INT64_MAX: number = Math.pow(2, 63) - 1;
+export const BSON_INT64_MIN: number = -Math.pow(2, 63);
+// Any integer up to 2^53 can be precisely represented by a double.
+export const JS_INT_MAX: number = 0x20000000000000;
+// Any integer down to -2^53 can be precisely represented by a double.
+export const JS_INT_MIN: number = -0x20000000000000;
+export const BSON_DATA_NUMBER: number = 1;
+export const BSON_DATA_STRING: number = 2;
+export const BSON_DATA_OBJECT: number = 3;
+export const BSON_DATA_ARRAY: number = 4;
+export const BSON_DATA_BINARY: number = 5;
+export const BSON_DATA_UNDEFINED: number = 6;
+export const BSON_DATA_OID: number = 7;
+export const BSON_DATA_BOOLEAN: number = 8;
+export const BSON_DATA_DATE: number = 9;
+export const BSON_DATA_NULL: number = 10;
+export const BSON_DATA_REGEXP: number = 11;
+export const BSON_DATA_DBPOINTER: number = 12;
+export const BSON_DATA_CODE: number = 13;
+export const BSON_DATA_SYMBOL: number = 14;
+export const BSON_DATA_CODE_W_SCOPE: number = 15;
+export const BSON_DATA_INT: number = 16;
+export const BSON_DATA_TIMESTAMP: number = 17;
+export const BSON_DATA_LONG: number = 18;
+export const BSON_DATA_DECIMAL128: number = 19;
+export const BSON_DATA_MIN_KEY: number = 0xff;
+export const BSON_DATA_MAX_KEY: number = 0x7f;
+export const BSON_BINARY_SUBTYPE_DEFAULT: number = 0;
+export const BSON_BINARY_SUBTYPE_FUNCTION: number = 1;
+export const BSON_BINARY_SUBTYPE_BYTE_ARRAY: number = 2;
+export const BSON_BINARY_SUBTYPE_UUID_OLD: number = 3;
+export const BSON_BINARY_SUBTYPE_UUID: number = 4;
+export const BSON_BINARY_SUBTYPE_MD5: number = 5;
+export const BSON_BINARY_SUBTYPE_USER_DEFINED: number = 128;
