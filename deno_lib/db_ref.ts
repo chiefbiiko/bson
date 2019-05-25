@@ -41,7 +41,7 @@ export class DBRef {
   }
 
   set namespace(collection: string) {
-    if (collection === null || collection.length === 0) {
+    if (!collection) {
       throw new TypeError("Input must be a truthy string.");
     }
     this.collection = collection;

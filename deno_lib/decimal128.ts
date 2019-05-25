@@ -156,6 +156,23 @@ export class Decimal128 {
 
   /** Create a Decimal128 instance from a string representation. */
   static fromString(str: string): Decimal128 {
+    if (!str) {
+      throw new TypeError("Input must be a truthy string.");
+    }
+    // Naively prevent against REDOS attacks.
+    // TODO: implementing a custom parsing for this, or refactoring the regex would yield
+    //       further gains.
+    if (str.length >= 7000) {
+      throw new TypeError(`${str} must not be longer than 7000.`);
+    }
+    // Validate the string
+    const stringMatch: string[] = str.match(PARSE_STRING_REGEXP);
+    const infMatch: string[] = str.match(PARSE_INF_REGEXP);
+    const nanMatch: string[] = str.match(PARSE_NAN_REGEXP);
+    if ((!stringMatch && !infMatch && !nanMatch) || str.length === 0) {
+      throw new TypeError(`${str} is not a valid Decimal128 string.`);
+    }
+
     // Parse state tracking
     let isNegative: boolean = false;
     let sawRadix: boolean = false;
@@ -197,26 +214,6 @@ export class Decimal128 {
     // Read index
     let index: number = 0;
 
-    if (str === null) {
-      throw new TypeError("Input must not be null.");
-    }
-    // Naively prevent against REDOS attacks.
-    // TODO: implementing a custom parsing for this, or refactoring the regex would yield
-    //       further gains.
-    if (str.length >= 7000) {
-      throw new TypeError(`${str} must not be longer than 7000.`);
-    }
-
-    // Results
-    const stringMatch: string[] = str.match(PARSE_STRING_REGEXP);
-    const infMatch: string[] = str.match(PARSE_INF_REGEXP);
-    const nanMatch: string[] = str.match(PARSE_NAN_REGEXP);
-
-    // Validate the string
-    if ((!stringMatch && !infMatch && !nanMatch) || str.length === 0) {
-      throw new TypeError(`${str} is not a valid Decimal128 string.`);
-    }
-
     if (stringMatch) {
       // full_match = stringMatch[0]
       // sign = stringMatch[1]
@@ -253,9 +250,7 @@ export class Decimal128 {
     if (!isDigit(str[index]) && str[index] !== ".") {
       if (str[index] === "i" || str[index] === "I") {
         return new Decimal128(
-          Uint8Array.from(
-            isNegative ? INF_NEGATIVE_BUF : INF_POSITIVE_BUF
-          )
+          Uint8Array.from(isNegative ? INF_NEGATIVE_BUF : INF_POSITIVE_BUF)
         );
       } else if (str[index] === "N") {
         return new Decimal128(Uint8Array.from(NAN_BUF));

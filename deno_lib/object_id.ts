@@ -17,11 +17,11 @@ export class ObjectId {
 
   /** Creates an ObjectId instance. */
   constructor(id?: number | string | Uint8Array) {
-    if (typeof id === "number" || id === null) {
+    if (typeof id === "number" || id === null || id === undefined) {
       // The most common usecase (blank id, new objectId instance)
       this.id = ObjectId.generate(id as number);
     } else if (typeof id === "string" && HEX_24.test(id)) {
-      this.cachedHex = id;
+      this.cachedHex = id.toLowerCase();
       this.id = encode(id, "hex");
     } else if (id instanceof Uint8Array && id.byteLength === 12) {
       this.id = id;
@@ -44,8 +44,11 @@ export class ObjectId {
 
   /** Generate a 12 byte id buffer used in ObjectIds. */
   static generate(time?: number): Uint8Array {
-    if (time === null) {
+    if (time === null || time === undefined) {
       time = ~~(Date.now() / 1000);
+    }
+    if (Number.isNaN(time) || !Number.isFinite(time) || time < 0 || time % 1) {
+      throw new TypeError("Input must be an integer timestamp.");
     }
     const inc: number = ObjectId.getInc();
     const buf: Uint8Array = new Uint8Array(12);
@@ -150,7 +153,7 @@ export class ObjectId {
     if (this.cachedHex) {
       return this.cachedHex;
     }
-    if (!this.id || this.id.byteLength !== 24) {
+    if (!this.id || this.id.byteLength !== 12) {
       throw new TypeError(`Invalid this.id [ ${this.id} ].`);
     }
     const hex: string = decode(this.id, "hex");
@@ -186,13 +189,13 @@ export class ObjectId {
     } else {
       otherHex = other;
     }
-    return otherHex === this.toHexString();
+    return otherHex.toLowerCase() === this.toHexString();
   }
 
   /** Returns the generation date (accurate up to the second) for an oid. */
   getTimestamp(): Date {
     const date: Date = new Date();
-    const time: number = new DataView(this.id).getUint32(0, false);
+    const time: number = new DataView(this.id.buffer).getUint32(0, false);
     date.setTime(Math.floor(time) * 1000);
     return date;
   }
