@@ -3,7 +3,7 @@
 // let Long = require('./long');
 // const Buffer = require('buffer').Buffer;
 
-import { Long } from "./long/mod.ts";
+import { ZERO, Long } from "./long/mod.ts";
 
 const PARSE_STRING_REGEXP: RegExp = /^(\+|-)?(\d+|(\d*\.\d*))?(E|e)?([-+])?(\d+)?$/;
 const PARSE_INF_REGEXP: RegExp = /^(\+|-)?(Infinity|inf)$/i;
@@ -26,6 +26,7 @@ const COMBINATION_NAN = 31;
 
 // Nan value bits as 32 bit values (due to lack of longs)
 const NAN_BUFFER: number[] = [
+    0x7c,
   0x00,
   0x00,
   0x00,
@@ -40,11 +41,11 @@ const NAN_BUFFER: number[] = [
   0x00,
   0x00,
   0x00,
-  0x00,
-  0x7c
-];
+  0x00
+].reverse();
 // Infinity value bits 32 bit values (due to lack of longs)
 const INF_NEGATIVE_BUFFER: number[] = [
+    0xf8,
   0x00,
   0x00,
   0x00,
@@ -59,10 +60,10 @@ const INF_NEGATIVE_BUFFER: number[] = [
   0x00,
   0x00,
   0x00,
-  0x00,
-  0xf8
-];
+  0x00
+].reverse();
 const INF_POSITIVE_BUFFER: number[] = [
+    0x78,
   0x00,
   0x00,
   0x00,
@@ -77,9 +78,8 @@ const INF_POSITIVE_BUFFER: number[] = [
   0x00,
   0x00,
   0x00,
-  0x00,
-  0x78
-];
+  0x00
+].reverse();
 
 /** Detects if the value is a digit. */
 function isDigit(value: unknown): boolean {
@@ -487,7 +487,7 @@ export class Decimal128 {
       }
     }
   
-    const significand: Long = multiply64x2(significandHigh, Long.fromString('100000000000000000'));
+    const significand:{ low: Long, high: Long } = multiply64x2(significandHigh, Long.fromString('100000000000000000'));
     significand.low = significand.low.add(significandLow);
   
     // if (lessThan(significand.low, significandLow)) {
@@ -630,7 +630,7 @@ export class Decimal128 {
       high: new Long(midh, high)
     };
   
-    if (dec.high.lessThan(Long.ZERO)) {
+    if (dec.high.lessThan(ZERO)) {
       str.push('-');
     }
   

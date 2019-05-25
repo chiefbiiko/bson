@@ -779,14 +779,16 @@ export class Long {
   }
 }
 
-const TWO_PWR_16_DBL: number = 1 << 16;
-const TWO_PWR_32_DBL: number = TWO_PWR_16_DBL * TWO_PWR_16_DBL;
-const TWO_PWR_64_DBL: number = TWO_PWR_32_DBL * TWO_PWR_32_DBL;
-const TWO_PWR_63_DBL: number = TWO_PWR_64_DBL / 2;
+export const TWO_PWR_16_DBL: number = 1 << 16;
+export const TWO_PWR_32_DBL: number = TWO_PWR_16_DBL * TWO_PWR_16_DBL;
+export const TWO_PWR_64_DBL: number = TWO_PWR_32_DBL * TWO_PWR_32_DBL;
+export const TWO_PWR_63_DBL: number = TWO_PWR_64_DBL / 2;
 
-const ZERO: Long = Long.fromInt(0);
-const UZERO: Long = Long.fromInt(0, true);
-const ONE: Long = Long.fromInt(1);
+export const ZERO: Long = Long.fromInt(0);
+export const UZERO: Long = Long.fromInt(0, true);
+export const ONE: Long = Long.fromInt(1);
+export const UONE: Long = Long.fromInt(1, true);
+export const NEG_ONE: Long = Long.fromInt(-1);
 
 export const MAX_VALUE: Long = Long.fromBits(
   0xffffffff | 0,
