@@ -39,8 +39,8 @@ export class Long {
   // a positive number, it overflows back into a negative).  Not handling this
   // case would often result in infinite recursion.
 
-  static isLong(x: any): boolean {
-    return x && x.__isLong__;
+  static isLong(x: unknown): boolean {
+    return !!x && !!(x as any).__isLong__;
   }
 
   /** Returns a Long representing the given 32 bit integer value. */
