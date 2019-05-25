@@ -10,6 +10,7 @@ export class Code {
     this.scope = scope;
   }
 
+  /** Creates a code instance from its extended JSON representation. */
   static fromExtendedJSON(doc: {
     $code: Function | string;
     $scope?: { [key: string]: any };
@@ -17,10 +18,12 @@ export class Code {
     return new Code(doc.$code, doc.$scope!);
   }
 
+  /** JSON fragment representation of a code instance. */
   toJSON(): { code: Function | string; scope: { [key: string]: any } } {
     return { scope: this.scope, code: this.code };
   }
 
+  /** Extended JSON representation of a code instance. */
   toExtendedJSON(): {
     $code: Function | string;
     $scope?: { [key: string]: any };

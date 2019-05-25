@@ -586,6 +586,7 @@ export class Decimal128 {
     return new Decimal128(buf);
   }
 
+  /** Creates a decimal128 from its extended JSON representation. */
   static fromExtendedJSON(doc: { $numberDecimal: string }): Decimal128 {
     return Decimal128.fromString(doc.$numberDecimal);
   }
@@ -836,10 +837,12 @@ export class Decimal128 {
     return str.join("");
   }
 
+  /** JSON fragment representation of a decimal128. */
   toJSON(): { $numberDecimal: string } {
     return { $numberDecimal: this.toString() };
   }
 
+  /** Extended JSON representation of a decimal128. */
   toExtendedJSON(): { $numberDecimal: string } {
     return { $numberDecimal: this.toString() };
   }

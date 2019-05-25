@@ -26,14 +26,16 @@ export class DBRef {
     this.db = db;
     this.fields = fields || {};
   }
-
-  static fromExtendedJSON(doc: { [key: string]: any }) {
+  
+  /** Creates a db reference from its extended JSON representation. */
+  static fromExtendedJSON(doc: { [key: string]: any }): DBRef {
     const copy: { [key: string]: any } = Object.assign({}, doc);
     ["$ref", "$id", "$db"].forEach(k => delete copy[k]);
     return new DBRef(doc.$ref, doc.$id, doc.$db, copy);
   }
 
-  toJSON() {
+  /** JSON fragment representation of a db reference. */
+  toJSON(): { [key: string]: any } {
     const doc: { [key: string]: any } = Object.assign(
       {
         $ref: this.collection,
@@ -47,7 +49,8 @@ export class DBRef {
     return doc;
   }
 
-  toExtendedJSON() {
+  /** Extended JSON representation of a db reference. */
+  toExtendedJSON(): { [key: string]: any } {
     const doc: { [key: string]: any } = Object.assign(
       {
         $ref: this.collection,

@@ -13,12 +13,19 @@ import {
   BSON_BINARY_SUBTYPE_USER_DEFINED
 } from "./constants.ts";
 
+/** Serialize a Uint8Array to a hexadecimal string. */
+function toHexString(buf: Uint8Array): string {
+  return buf.reduce(
+    (hex: string, byte: number): string =>
+      hex + (byte < 16 ? "0" + byte.toString(16) : byte.toString(16)),
+    ""
+  );
+}
+
 const encoder: TextEncoder = new TextEncoder();
 const decoder: TextDecoder = new TextDecoder();
 
-/**
- * A class representation of the BSON Binary type.
- */
+/** A class representation of the BSON Binary type. */
 export class Binary {
   static readonly BUFFER_SIZE: number = 256;
   static readonly SUBTYPE_DEFAULT: number = BSON_BINARY_SUBTYPE_DEFAULT;
@@ -60,6 +67,16 @@ export class Binary {
     } else {
       this.buffer = new Uint8Array(Binary.BUFFER_SIZE);
     }
+  }
+
+  /** Creates a binary from its extended JSON representation. */
+  static fromExtendedJSON(doc: {
+    $binary: { base64: string; subType: string };
+  }): Binary {
+    const type: number = doc.$binary.subType
+      ? parseInt(doc.$binary.subType, 16)
+      : 0;
+    return new Binary(base64ToUint8Array(doc.$binary.base64), type);
   }
 
   /** Updates a binary with a single byte_value. */
@@ -170,22 +187,4 @@ export class Binary {
       }
     };
   }
-
-  /** Creates a binary from its extended JSON representation. */
-  static fromExtendedJSON(doc: {
-    $binary: { base64: string; subType: string };
-  }): Binary {
-    const type: number = doc.$binary.subType
-      ? parseInt(doc.$binary.subType, 16)
-      : 0;
-    return new Binary(base64ToUint8Array(doc.$binary.base64), type);
-  }
-}
-
-/** Serialize a Uint8Array to a hexadecimal string. */
-function toHexString(buf: Uint8Array): string {
-  return buf.reduce((hex: string, byte: number): string => {
-    hex += byte < 16 ? "0" + byte.toString(16) : byte.toString(16);
-    return hex;
-  }, "");
 }
