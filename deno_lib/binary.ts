@@ -1,7 +1,4 @@
-import {
-  toUint8Array as base64ToUint8Array,
-  fromUint8Array as base64FromUint8Array
-} from "https://deno.land/x/base64/mod.ts";
+import { encode, decode } from "./transcoding.ts";
 
 import {
   BSON_BINARY_SUBTYPE_DEFAULT,
@@ -12,18 +9,6 @@ import {
   BSON_BINARY_SUBTYPE_MD5,
   BSON_BINARY_SUBTYPE_USER_DEFINED
 } from "./constants.ts";
-
-/** Serialize a Uint8Array to a hexadecimal string. */
-function toHexString(buf: Uint8Array): string {
-  return buf.reduce(
-    (hex: string, byte: number): string =>
-      hex + (byte < 16 ? "0" + byte.toString(16) : byte.toString(16)),
-    ""
-  );
-}
-
-const encoder: TextEncoder = new TextEncoder();
-const decoder: TextDecoder = new TextDecoder();
 
 /** A class representation of the BSON Binary type. */
 export class Binary {
@@ -59,7 +44,7 @@ export class Binary {
 
     if (buf !== null) {
       if (typeof buf === "string") {
-        this.buffer = encoder.encode(buf);
+        this.buffer = encode(buf, "utf8");
       } else {
         this.buffer = Uint8Array.from(buf);
       }
@@ -76,7 +61,7 @@ export class Binary {
     const type: number = doc.$binary.subType
       ? parseInt(doc.$binary.subType, 16)
       : 0;
-    return new Binary(base64ToUint8Array(doc.$binary.base64), type);
+    return new Binary(encode(doc.$binary.base64, "base64"), type);
   }
 
   /** Updates a binary with a single byte_value. */
@@ -129,7 +114,7 @@ export class Binary {
     }
 
     if (typeof buf === "string") {
-      buf = encoder.encode(buf);
+      buf = encode(buf, "utf8") as Uint8Array;
     }
 
     this.buffer.set(buf, offset);
@@ -148,7 +133,7 @@ export class Binary {
     if (asRaw) {
       return Uint8Array.from(this.buffer.subarray(0, this.position));
     } else {
-      return decoder.decode(this.buffer.subarray(0, this.position));
+      return decode(this.buffer.subarray(0, this.position));
     }
   }
 
@@ -158,31 +143,22 @@ export class Binary {
   }
 
   /** String representation of a binary. */
-  toString(format: string): string {
+  toString(format: string = "utf8"): string {
     const buf: Uint8Array = this.buffer.subarray(0, this.position);
-    if (/^utf-?8$/i.test(format)) {
-      return decoder.decode(buf);
-    } else if (/^base64$/i.test(format)) {
-      return base64FromUint8Array(buf);
-    } else if (/^hex(?:adecimal)?$/i.test(format)) {
-      return toHexString(buf);
-    } else {
-      throw new TypeError("Unsupported string format");
-    }
+    return decode(buf, format);
   }
 
   /** JSON fragment representation of a binary. */
   toJSON(): string {
-    return base64FromUint8Array(this.buffer.subarray(0, this.position));
+    return decode(this.buffer.subarray(0, this.position), "base64");
   }
 
   /** Extended JSON representation of a binary. */
   toExtendedJSON(): { $binary: { base64: string; subType: string } } {
-    const base64: string = base64FromUint8Array(this.buffer);
     const subType: string = this.sub_type.toString(16);
     return {
       $binary: {
-        base64,
+        base64: decode(this.buffer, "base64"),
         subType: subType.length === 1 ? "0" + subType : subType
       }
     };
