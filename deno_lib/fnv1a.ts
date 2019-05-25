@@ -14,7 +14,7 @@ const FNV_MASK: Long = new Long(MASK_32, 0);
  * Implementation of the FNV-1a hash for a 32-bit hash value.
  * More: http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a
  */
-export function fnv1a32(input: string = "", encoding: string = "utf8"): number {
+export function fnv1a32(input: string, encoding: string = "utf8"): number {
   const octets: Uint8Array = encode(input, encoding);
   let hash: Long = OFFSET_BASIS;
   for (let i: number = 0; i < octets.length; i += 1) {
