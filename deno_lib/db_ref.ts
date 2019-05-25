@@ -26,12 +26,25 @@ export class DBRef {
     this.db = db;
     this.fields = fields || {};
   }
-  
+
   /** Creates a db reference from its extended JSON representation. */
   static fromExtendedJSON(doc: { [key: string]: any }): DBRef {
     const copy: { [key: string]: any } = Object.assign({}, doc);
     ["$ref", "$id", "$db"].forEach(k => delete copy[k]);
     return new DBRef(doc.$ref, doc.$id, doc.$db, copy);
+  }
+
+  // the 1.x parser used a "namespace" property, while 4.x uses "collection".
+  // To ensure backwards  compatibility, let's expose "namespace"
+  get namespace(): string {
+    return this.collection;
+  }
+
+  set namespace(collection: string) {
+    if (collection === null || collection.length === 0) {
+      throw new TypeError("Input must be a truthy string.");
+    }
+    this.collection = collection;
   }
 
   /** JSON fragment representation of a db reference. */
@@ -62,15 +75,5 @@ export class DBRef {
       doc.$db = this.db;
     }
     return doc;
-  }
-
-  // the 1.x parser used a "namespace" property, while 4.x uses "collection".
-  // To ensure backwards  compatibility, let's expose "namespace"
-  get namespace(): string {
-    return this.collection;
-  }
-
-  set namespace(collection: string) {
-    this.collection = collection;
   }
 }
