@@ -552,7 +552,6 @@ function serializeCode(
     // Write the
     index += codeSize + 4;
 
-    //
     // Serialize the scope value
     const endIndex: number = serializeInto(
       buf,
