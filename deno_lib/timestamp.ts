@@ -1,16 +1,31 @@
 import { MAX_UNSIGNED_VALUE, Long } from "./long/mod.ts";
 
+function assembleSuperParams(
+  low?: number | Long | Timestamp,
+  high?: number
+): [number, number, boolean] {
+  if (typeof low === "number" && typeof high === "number") {
+    return [low, high, true];
+  } else if (low instanceof Timestamp || low instanceof Long) {
+    return [low.low, low.high, true];
+  } else {
+    const time: Long = Long.fromInt(new Date().getTime());
+    return [time.low, time.high, true];
+  }
+}
+
+export const MAX_VALUE: Long = MAX_UNSIGNED_VALUE;
+
 /** A class representation of the BSON Timestamp type. */
 export class Timestamp extends Long {
-  static MAX_VALUE: Long = MAX_UNSIGNED_VALUE;
   readonly _bsontype: string = "Timestamp";
 
   low: number;
   high: number;
   unsigned: boolean;
 
-  constructor(low: number | Long, high?: number) {
-    super(...(Long.isLong(low) ? [low.low, low.high] : [low, high]), true);
+  constructor(low?: number | Long | Timestamp, high?: number) {
+    super(...assembleSuperParams(low, high));
   }
 
   /** Returns a Timestamp represented by the given (32-bit) integer value.  */
@@ -36,7 +51,7 @@ export class Timestamp extends Long {
 
   /** Creates a timestamp from a string, optionally using the given radix. */
   static fromString(str: string, radix: number = 10) {
-    return new Timestamp(Long.fromString(str, true, radix));
+    return new Timestamp(Long.fromString(str, radix, true));
   }
 
   /** Creates a timestamp from a string, optionally using the given radix. */

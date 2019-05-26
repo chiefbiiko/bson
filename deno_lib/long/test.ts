@@ -30,8 +30,8 @@ test(function toString(): void {
   assertEquals(longVal.toString(10), "18446744073709551615");
   assertEquals(longVal.toString(8), "1777777777777777777777");
   // #7, obviously wrong in goog.math.Long
-  assertEquals(Long.fromString("zzzzzz", false, 36).toString(36), "zzzzzz");
-  assertEquals(Long.fromString("-zzzzzz", false, 36).toString(36), "-zzzzzz");
+  assertEquals(Long.fromString("zzzzzz", 36, false).toString(36), "zzzzzz");
+  assertEquals(Long.fromString("-zzzzzz", 36, false).toString(36), "-zzzzzz");
 });
 
 test(function toBytes(): void {
@@ -181,7 +181,7 @@ test(function unsignedMostSignificantBitUnsigned(): void {
   assertEquals(longVal.notEquals(MIN_VALUE), true);
   assertEquals(longVal.toString(), "9223372036854775808");
   assertEquals(
-    Long.fromString("9223372036854775808", true).toString(),
+    Long.fromString("9223372036854775808", 10, true).toString(),
     "9223372036854775808"
   );
 });

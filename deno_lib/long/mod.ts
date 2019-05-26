@@ -8,11 +8,11 @@ const UINT_CACHE: { [key: number]: Long } = {};
 export class Long {
   /** An indicator used to reliably determine if an object is a Long or not. */
   protected readonly __isLong__: boolean = true;
-  readonly _bsontype: "Long";
+  readonly _bsontype: string = "Long";
 
-  low: number;
-  high: number;
-  unsigned: boolean;
+  readonly low: number;
+  readonly high: number;
+  protected _unsigned: boolean;
 
   /**
    * Constructs a 64 bit two's-complement integer, given its low and high 32 bit
@@ -22,7 +22,7 @@ export class Long {
   constructor(low: number, high: number, unsigned: boolean = false) {
     this.low = low | 0;
     this.high = high | 0;
-    this.unsigned = !!unsigned;
+    this._unsigned = !!unsigned;
   }
 
   // The internal representation of a long is the two given signed, 32-bit values.
@@ -126,8 +126,8 @@ export class Long {
    */
   static fromString(
     str: string,
-    unsigned: boolean = false,
-    radix: number = 10
+    radix: number = 10,
+    unsigned: boolean = false
   ): Long {
     if (str.length === 0) {
       throw Error("Empty string.");
@@ -155,7 +155,7 @@ export class Long {
     if ((p = str.indexOf("-")) > 0) {
       throw Error("Interior hyphen.");
     } else if (p === 0) {
-      return Long.fromString(str.substring(1), unsigned, radix).negate();
+      return Long.fromString(str.substring(1), radix, unsigned).negate();
     }
 
     // Do several (8) digits each time through the loop, so as to
@@ -174,7 +174,7 @@ export class Long {
         result = result.add(Long.fromNumber(value));
       }
     }
-    result.unsigned = unsigned;
+    result._unsigned = unsigned;
     return result;
   }
 
@@ -190,7 +190,7 @@ export class Long {
       return Long.fromNumber(val, unsigned);
     }
     if (typeof val === "string") {
-      return Long.fromString(val, unsigned);
+      return Long.fromString(val, 10, unsigned);
     }
     // Throws for non-objects, converts non-instanceof Long:
     return Long.fromBits(
@@ -229,9 +229,13 @@ export class Long {
     );
   }
 
+  get unsigned(): boolean {
+    return this._unsigned;
+  }
+
   /** Converts the Long to a 32 bit integer, assuming it is a 32 bit integer. */
   toInt(): number {
-    return this.unsigned ? this.low >>> 0 : this.low;
+    return this._unsigned ? this.low >>> 0 : this.low;
   }
 
   /**
@@ -239,7 +243,7 @@ export class Long {
    * value (double, 53 bit mantissa).
    */
   toNumber(): number {
-    if (this.unsigned) {
+    if (this._unsigned) {
       return (this.high >>> 0) * TWO_PWR_32_DBL + (this.low >>> 0);
     }
     return this.high * TWO_PWR_32_DBL + (this.low >>> 0);
@@ -267,7 +271,10 @@ export class Long {
 
     // Do several (6) digits each time through the loop, so as to
     // minimize the calls to the very expensive emulated div.
-    let radixToPower: Long = Long.fromNumber(Math.pow(radix, 6), this.unsigned),
+    let radixToPower: Long = Long.fromNumber(
+        Math.pow(radix, 6),
+        this._unsigned
+      ),
       rem: Long = this;
     let result: string = "";
     for (;;) {
@@ -330,12 +337,12 @@ export class Long {
 
   /** Tests if this Long's value is negative. */
   isNegative(): boolean {
-    return !this.unsigned && this.high < 0;
+    return !this._unsigned && this.high < 0;
   }
 
   /** Tests if this Long's value is positive. */
   isPositive(): boolean {
-    return this.unsigned || this.high >= 0;
+    return this._unsigned || this.high >= 0;
   }
 
   /** Tests if this Long's value is odd. */
@@ -356,7 +363,7 @@ export class Long {
       other = other as Long;
     }
     if (
-      this.unsigned !== other.unsigned &&
+      this._unsigned !== other._unsigned &&
       this.high >>> 31 === 1 &&
       other.high >>> 31 === 1
     ) {
@@ -409,7 +416,7 @@ export class Long {
       return 1;
     }
     // At this point the sign bits are the same
-    if (!this.unsigned) {
+    if (!this._unsigned) {
       return this.subtract(other).isNegative() ? -1 : 1;
     }
     // Both are positive if at least one is unsigned
@@ -421,7 +428,7 @@ export class Long {
 
   /** Negates this Long's value. */
   negate(): Long {
-    if (!this.unsigned && this.equals(MIN_VALUE)) {
+    if (!this._unsigned && this.equals(MIN_VALUE)) {
       return MIN_VALUE;
     }
     return this.not().add(ONE);
@@ -462,7 +469,7 @@ export class Long {
     c32 &= 0xffff;
     c48 += a48 + b48;
     c48 &= 0xffff;
-    return Long.fromBits((c16 << 16) | c00, (c48 << 16) | c32, this.unsigned);
+    return Long.fromBits((c16 << 16) | c00, (c48 << 16) | c32, this._unsigned);
   }
 
   /** Returns the difference of this and the specified Long. */
@@ -492,7 +499,7 @@ export class Long {
       multiplier.high
     );
     const high: number = wasm.exports.get_high();
-    return Long.fromBits(low, high, this.unsigned);
+    return Long.fromBits(low, high, this._unsigned);
   }
 
   /**
@@ -512,7 +519,7 @@ export class Long {
     // negative number / -1 would be 1 larger than the largest
     // positive number, due to two's complement.
     if (
-      !this.unsigned &&
+      !this._unsigned &&
       this.high === -0x80000000 &&
       divisor.low === -1 &&
       divisor.high === -1
@@ -521,13 +528,13 @@ export class Long {
       return this;
     }
     let low: number;
-    if (this.unsigned) {
+    if (this._unsigned) {
       low = wasm.exports.div_u(this.low, this.high, divisor.low, divisor.high);
     } else {
       low = wasm.exports.div_s(this.low, this.high, divisor.low, divisor.high);
     }
     const high: number = wasm.exports.get_high();
-    return Long.fromBits(low, high, this.unsigned);
+    return Long.fromBits(low, high, this._unsigned);
   }
 
   /** Returns this Long modulo the specified. */
@@ -538,18 +545,18 @@ export class Long {
       divisor = divisor as Long;
     }
     let low: number;
-    if (this.unsigned) {
+    if (this._unsigned) {
       low = wasm.exports.rem_u(this.low, this.high, divisor.low, divisor.high);
     } else {
       low = wasm.exports.rem_s(this.low, this.high, divisor.low, divisor.high);
     }
     const high: number = wasm.exports.get_high();
-    return Long.fromBits(low, high, this.unsigned);
+    return Long.fromBits(low, high, this._unsigned);
   }
 
   /**  Returns the bitwise NOT of this Long. */
   not() {
-    return Long.fromBits(~this.low, ~this.high, this.unsigned);
+    return Long.fromBits(~this.low, ~this.high, this._unsigned);
   }
 
   /** Returns the bitwise AND of this Long and the specified. */
@@ -562,7 +569,7 @@ export class Long {
     return Long.fromBits(
       this.low & other.low,
       this.high & other.high,
-      this.unsigned
+      this._unsigned
     );
   }
 
@@ -576,7 +583,7 @@ export class Long {
     return Long.fromBits(
       this.low | other.low,
       this.high | other.high,
-      this.unsigned
+      this._unsigned
     );
   }
 
@@ -590,7 +597,7 @@ export class Long {
     return Long.fromBits(
       this.low ^ other.low,
       this.high ^ other.high,
-      this.unsigned
+      this._unsigned
     );
   }
 
@@ -607,10 +614,10 @@ export class Long {
       return Long.fromBits(
         this.low << numBits,
         (this.high << numBits) | (this.low >>> (32 - numBits)),
-        this.unsigned
+        this._unsigned
       );
     } else {
-      return Long.fromBits(0, this.low << (numBits - 32), this.unsigned);
+      return Long.fromBits(0, this.low << (numBits - 32), this._unsigned);
     }
   }
 
@@ -630,13 +637,13 @@ export class Long {
       return Long.fromBits(
         (this.low >>> numBits) | (this.high << (32 - numBits)),
         this.high >> numBits,
-        this.unsigned
+        this._unsigned
       );
     } else {
       return Long.fromBits(
         this.high >> (numBits - 32),
         this.high >= 0 ? 0 : -1,
-        this.unsigned
+        this._unsigned
       );
     }
   }
@@ -658,13 +665,13 @@ export class Long {
       return Long.fromBits(
         (this.low >>> numBits) | (this.high << (32 - numBits)),
         this.high >>> numBits,
-        this.unsigned
+        this._unsigned
       );
     }
     if (numBits === 32) {
-      return Long.fromBits(this.high, 0, this.unsigned);
+      return Long.fromBits(this.high, 0, this._unsigned);
     }
-    return Long.fromBits(this.high >>> (numBits - 32), 0, this.unsigned);
+    return Long.fromBits(this.high >>> (numBits - 32), 0, this._unsigned);
   }
 
   /** Returns this Long with bits rotated to the left by the given amount. */
@@ -679,14 +686,14 @@ export class Long {
       return this;
     }
     if (numBits === 32) {
-      return Long.fromBits(this.high, this.low, this.unsigned);
+      return Long.fromBits(this.high, this.low, this._unsigned);
     }
     if (numBits < 32) {
       b = 32 - numBits;
       return Long.fromBits(
         (this.low << numBits) | (this.high >>> b),
         (this.high << numBits) | (this.low >>> b),
-        this.unsigned
+        this._unsigned
       );
     }
     numBits -= 32;
@@ -694,7 +701,7 @@ export class Long {
     return Long.fromBits(
       (this.high << numBits) | (this.low >>> b),
       (this.low << numBits) | (this.high >>> b),
-      this.unsigned
+      this._unsigned
     );
   }
 
@@ -710,14 +717,14 @@ export class Long {
       return this;
     }
     if (numBits === 32) {
-      return Long.fromBits(this.high, this.low, this.unsigned);
+      return Long.fromBits(this.high, this.low, this._unsigned);
     }
     if (numBits < 32) {
       b = 32 - numBits;
       return Long.fromBits(
         (this.high << b) | (this.low >>> numBits),
         (this.low << b) | (this.high >>> numBits),
-        this.unsigned
+        this._unsigned
       );
     }
     numBits -= 32;
@@ -725,19 +732,19 @@ export class Long {
     return Long.fromBits(
       (this.low << b) | (this.high >>> numBits),
       (this.high << b) | (this.low >>> numBits),
-      this.unsigned
+      this._unsigned
     );
   }
 
   /** Converts this Long to signed. */
   toSigned() {
-    if (!this.unsigned) return this;
+    if (!this._unsigned) return this;
     return Long.fromBits(this.low, this.high, false);
   }
 
   /** Converts this Long to unsigned. */
   toUnsigned() {
-    if (this.unsigned) return this;
+    if (this._unsigned) return this;
     return Long.fromBits(this.low, this.high, true);
   }
 
