@@ -1,15 +1,15 @@
 import { encode, decode } from "./transcoding.ts";
 
-// Regular expression that checks for hex value
-const HEX_24: RegExp = new RegExp("^[0-9a-fA-F]{24}$");
-
-// constants
-const PROCESS_UNIQUE: Uint8Array = crypto.getRandomValues(new Uint8Array(5));
-
 /**  A class representation of the BSON ObjectId type. */
 export class ObjectId {
   /** Session counter. */
   protected static index: number = ~~(Math.random() * 0xffffff);
+  /** Regular expression that checks for hex value. */
+  protected static readonly HEX_24: RegExp = new RegExp("^[0-9a-fA-F]{24}$");
+  /** 5 cs bytes. */
+  protected static readonly PROCESS_UNIQUE: Uint8Array = crypto.getRandomValues(
+    new Uint8Array(5)
+  );
 
   readonly _bsontype: string = "ObjectId";
   readonly id: Uint8Array;
@@ -20,7 +20,7 @@ export class ObjectId {
     if (typeof id === "number" || id === null || id === undefined) {
       // The most common usecase (blank id, new objectId instance)
       this.id = ObjectId.generate(id as number);
-    } else if (typeof id === "string" && HEX_24.test(id)) {
+    } else if (typeof id === "string" && ObjectId.HEX_24.test(id)) {
       this.cachedHex = id.toLowerCase();
       this.id = encode(id, "hex");
     } else if (id instanceof Uint8Array && id.byteLength === 12) {
@@ -58,11 +58,11 @@ export class ObjectId {
     buf[1] = (time >> 16) & 0xff;
     buf[0] = (time >> 24) & 0xff;
     // 5-byte process unique
-    buf[4] = PROCESS_UNIQUE[0];
-    buf[5] = PROCESS_UNIQUE[1];
-    buf[6] = PROCESS_UNIQUE[2];
-    buf[7] = PROCESS_UNIQUE[3];
-    buf[8] = PROCESS_UNIQUE[4];
+    buf[4] = ObjectId.PROCESS_UNIQUE[0];
+    buf[5] = ObjectId.PROCESS_UNIQUE[1];
+    buf[6] = ObjectId.PROCESS_UNIQUE[2];
+    buf[7] = ObjectId.PROCESS_UNIQUE[3];
+    buf[8] = ObjectId.PROCESS_UNIQUE[4];
     // 3-byte counter
     buf[11] = inc & 0xff;
     buf[10] = (inc >> 8) & 0xff;
@@ -106,7 +106,7 @@ export class ObjectId {
     if (id instanceof ObjectId || typeof id === "number") {
       return true;
     }
-    if (typeof id === "string" && HEX_24.test(id)) {
+    if (typeof id === "string" && ObjectId.HEX_24.test(id)) {
       return true;
     }
     if (id.length === 12) {
@@ -117,7 +117,7 @@ export class ObjectId {
 
   /** Creates an ObjectId from a hex string representation of an ObjectId. */
   static fromHexString(str: string): ObjectId {
-    if (str === null || !HEX_24.test(str)) {
+    if (str === null || !ObjectId.HEX_24.test(str)) {
       throw new TypeError(
         "Input must be a string of 24 hexadecimal characters."
       );
