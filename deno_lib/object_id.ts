@@ -5,7 +5,9 @@ export class ObjectId {
   /** Session counter. */
   protected static index: number = ~~(Math.random() * 0xffffff);
   /** Regular expression that checks for hex value. */
-  protected static readonly HEX_24: RegExp = new RegExp("^[0-9a-fA-F]{24}$");
+  protected static readonly HEX_24: RegExp = /^[0-9a-fA-F]{24}$/;
+  /** Regex for a literal "hex*". */
+  protected static readonly HEX: RegExp = /^hex(adecimal)?$/i
   /** 5 cs bytes. */
   protected static readonly PROCESS_UNIQUE: Uint8Array = crypto.getRandomValues(
     new Uint8Array(5)
@@ -148,21 +150,17 @@ export class ObjectId {
     this.id[0] = (time >> 24) & 0xff;
   }
 
-  /** Return the ObjectId id as a 24 byte hex string representation. */
-  toHexString(): string {
-    if (this.cachedHex) {
-      return this.cachedHex;
-    }
-    if (!this.id || this.id.byteLength !== 12) {
-      throw new TypeError(`Invalid this.id [ ${this.id} ].`);
-    }
-    const hex: string = decode(this.id, "hex");
-    this.cachedHex = hex;
-    return hex;
-  }
-
   /** Converts the id into a 24-byte string, hex by default. */
   toString(format: string = "hex"): string {
+    if (ObjectId.HEX.test(format)) {
+      if (this.cachedHex) {
+        return this.cachedHex;
+      } else {
+        const hex: string = decode(this.id, "hex");
+        this.cachedHex = hex;
+        return hex;
+      }
+    }
     return decode(this.id, format);
   }
 
@@ -172,13 +170,13 @@ export class ObjectId {
 
   /** Converts to its JSON representation. */
   toJSON(): string {
-    return this.toHexString();
+    return this.toString("hex");
   }
 
   /** Compares the equality of this ObjectId with the other. */
   equals(other: ObjectId | string | Uint8Array): boolean {
     if (other instanceof ObjectId) {
-      return this.toHexString() === other.toHexString();
+      return this.toString("hex") === other.toString("hex");
     }
     if (!ObjectId.isValid(other)) {
       return false;
@@ -189,7 +187,7 @@ export class ObjectId {
     } else {
       otherHex = other;
     }
-    return otherHex.toLowerCase() === this.toHexString();
+    return otherHex.toLowerCase() === this.toString("hex");
   }
 
   /** Returns the generation date (accurate up to the second) for an oid. */
@@ -202,6 +200,6 @@ export class ObjectId {
 
   /** Extended JSON representation of an object id. */
   toExtendedJSON(): { $oid: string } {
-    return { $oid: this.toHexString() };
+    return { $oid: this.toString("hex") };
   }
 }
