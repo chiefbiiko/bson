@@ -51,7 +51,7 @@ const keysToCodecs: { [key:string]: any} = {
 };
 
 /** Deserializes a value from its extended JSON representation. */
-function deserializeValue(/*self:any, key: string, */value: any, options?: {relaxed?: boolean}): any {
+function deserializeValue(/*self:any, key: string, */value: any, options: {relaxed: boolean, strict?: boolean} = { relaxed: true, strict: false }): any {
   if (typeof value === 'number') {
     if (options.relaxed) {
       return value;
@@ -121,7 +121,7 @@ function deserializeValue(/*self:any, key: string, */value: any, options?: {rela
  * Parse an Extended JSON string, constructing the JavaScript value or object described by that
  * string.
  */
- function parse(text: string, options?: { relaxed?: boolean, strict?: boolean}): any {
+ function parse(text: string, options: { relaxed: boolean, strict?: boolean} = { relaxed: true, strict: false }): any {
   options = Object.assign({}, { relaxed: true }, options || {});
   // relaxed implies not strict
   if (typeof options.relaxed === 'boolean') {options.strict = !options.relaxed;}
@@ -144,18 +144,17 @@ function deserializeValue(/*self:any, key: string, */value: any, options?: {rela
  * function is specified or optionally including only the specified properties if a replacer array
  * is specified.
  */
-function stringify(value: any, replacer?: (number | string)[], space?: number | string, options?:{ relaxed?: boolean}): string {
-  // if (space != null && typeof space === 'object') {
-  //   options = space;
-  //   space = 0;
-  // }
-  // if (replacer != null && typeof replacer === 'object' && !Array.isArray(replacer)) {
-  //   options = replacer;
-  //   replacer = null;
-  //   space = 0;
-  // }
+function stringify(value: any, replacer: any, space: any, options:any): string {
+  if (space &&  space.constructor.name === "Object") {
+    options = space;
+    space = 0;
+  }
+  if (replacer &&  replacer.constructor.name === 'Object' && !Array.isArray(replacer)) {
+    options = replacer;
+    replacer = null;
+    space = 0;
+  }
   options = Object.assign({}, { relaxed: true }, options || {});
-
   const doc: { [key:string]: any} = Array.isArray(value)
     ? serializeArray(value, options)
     : serializeDocument(value, options);
@@ -167,8 +166,7 @@ function stringify(value: any, replacer?: (number | string)[], space?: number |
  * Serializes an object to an Extended JSON string, and reparse it as a
  * JavaScript object.
  */
-function serialize(bson: any, options?:{ relaxed?: boolean}): any {
-  options = options || {};
+function serialize(bson: any, options:{ relaxed: boolean} = { relaxed: true}): any {
   return JSON.parse(stringify(bson, null, null, options));
 }
 
@@ -176,14 +174,14 @@ function serialize(bson: any, options?:{ relaxed?: boolean}): any {
  * Deserializes an Extended JSON object into a plain JavaScript object with
  * native/BSON types.
  */
-function deserialize(ejson: { [key:string]: any}, options?: { relaxed?: boolean, strict?: boolean}): any {
+function deserialize(ejson: { [key:string]: any}, options: { relaxed: boolean, strict?: boolean} = { relaxed: true, strict: false }): any {
   return parse(JSON.stringify(ejson), options);
 }
 
 ////
 
 /** Serializes every item in the input array. */
-function serializeArray(arr: any[], options?: { relaxed?: boolean}): any {
+function serializeArray(arr: any[], options: { relaxed: boolean}={relaxed:true}): any {
   return arr.map((v: any) => serializeValue(v, options));
 }
 
@@ -194,7 +192,7 @@ function getISOString(date: Date): string {
   return date.getUTCMilliseconds() !== 0 ? iso : iso.slice(0, -5) + 'Z';
 }
 
-function serializeValue(value: any, options?: { relaxed?: boolean}): any {
+function serializeValue(value: any, options: { relaxed: boolean}={relaxed:true}): any {
   if (Array.isArray(value)) {return serializeArray(value, options);}
   if (value === undefined || value === null) {return null;}
   if (value instanceof Date) {
@@ -255,7 +253,7 @@ const BSON_TYPE_MAPPINGS: { [key:string]: any} = {
   Timestamp: (o: any): Timestamp => Timestamp.fromBits(o.low, o.high)
 };
 
-function serializeDocument(doc: any/*{ [key:string]: any}*/, options?: { relaxed?: boolean}): { [key:string]: any} {
+function serializeDocument(doc: any/*{ [key:string]: any}*/, options: { relaxed: boolean}={relaxed:true}): { [key:string]: any} {
   if (doc == null || typeof doc !== 'object') {throw new Error('not an object instance');}
   const bsontype: string = doc._bsontype;
   if (!bsontype) {

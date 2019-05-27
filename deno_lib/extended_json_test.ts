@@ -71,7 +71,7 @@ import { EJSON } from "./extended_json.ts"
   }
   const date: Date = new Date();
   date.setTime(1488372056737);
-  const doc: { [key:string]: any} = {
+  const doc0: { [key:string]: any} = {
     _id: new Int32(100),
     gh: new Int32(1),
     binary: new Binary(buf),
@@ -102,96 +102,112 @@ test({
   fn(): void {
     const expected: string =
       '{"_id":{"$numberInt":"100"},"gh":{"$numberInt":"1"},"binary":{"$binary":{"base64":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+Pw==","subType":"00"}},"date":{"$date":{"$numberLong":"1488372056737"}},"code":{"$code":"function() {}","$scope":{"a":{"$numberInt":"1"}}},"dbRef":{"$ref":"tests","$id":{"$numberInt":"1"},"$db":"test"},"decimal":{"$numberDecimal":"100"},"double":{"$numberDouble":"10.1"},"int32":{"$numberInt":"10"},"long":{"$numberLong":"200"},"maxKey":{"$maxKey":"9223372036854775807"},"minKey":{"$minKey":"-9223372036854775808"},"objectId":{"$oid":"111111111111111111111111"},"regexp":{"$regularExpression":{"pattern":"hello world","options":"i"}},"symbol":{"$symbol":"symbol"},"timestamp":{"$timestamp":{"t":0,"i":1000}},"int32Number":{"$numberInt":"300"},"doubleNumber":{"$numberDouble":"200.2"},"longNumberIntFit":{"$numberLong":"7036874417766400"},"doubleNumberIntFit":{"$numberLong":"19007199250000000"}}';
-    const ejson: string = EJSON.stringify(doc, null, 0, { relaxed: false })
+    const ejson: string = EJSON.stringify(doc0, null, 0, { relaxed: false })
     assertEquals(ejson, expected);
   }
 })
 
-// it('should correctly deserialize using the default relaxed mode', function() {
-//   // Deserialize the document using non strict mode
-//   var doc1 = EJSON.parse(EJSON.stringify(doc, null, 0));
-//
-//   // Validate the values
-//   assert.equal(300, doc1.int32Number);
-//   assert.equal(200.2, doc1.doubleNumber);
-//   assert.equal(0x19000000000000, doc1.longNumberIntFit);
-//   assert.equal(19007199250000000.12, doc1.doubleNumberIntFit);
-//
-//   // Deserialize the document using strict mode
-//   doc1 = EJSON.parse(EJSON.stringify(doc, null, 0), { relaxed: false });
-//
-//   // Validate the values
-//   expect(doc1.int32Number._bsontype).to.equal('Int32');
-//   expect(doc1.doubleNumber._bsontype).to.equal('Double');
-//   expect(doc1.longNumberIntFit._bsontype).to.equal('Long');
-//   expect(doc1.doubleNumberIntFit._bsontype).to.equal('Long');
-// });
-//
-// it('should correctly serialize, and deserialize using built-in BSON', function() {
-//   // Create a doc
-//   var doc1 = {
-//     int32: new Int32(10)
-//   };
-//
-//   // Serialize the document
-//   var text = EJSON.stringify(doc1, null, 0, { relaxed: false });
-//   expect(text).to.equal('{"int32":{"$numberInt":"10"}}');
-//
-//   // Deserialize the json in strict and non strict mode
-//   var doc2 = EJSON.parse(text, { relaxed: false });
-//   expect(doc2.int32._bsontype).to.equal('Int32');
-//   doc2 = EJSON.parse(text);
-//   expect(doc2.int32).to.equal(10);
-// });
-//
-// it('should correctly serialize bson types when they are values', function() {
-//   var serialized = EJSON.stringify(new ObjectId('591801a468f9e7024b6235ea'), { relaxed: false });
-//   expect(serialized).to.equal('{"$oid":"591801a468f9e7024b6235ea"}');
-//   serialized = EJSON.stringify(new ObjectID('591801a468f9e7024b6235ea'), { relaxed: false });
-//   expect(serialized).to.equal('{"$oid":"591801a468f9e7024b6235ea"}');
-//   serialized = EJSON.stringify(new OldObjectID('591801a468f9e7024b6235ea'), { relaxed: false });
-//   expect(serialized).to.equal('{"$oid":"591801a468f9e7024b6235ea"}');
-//
-//   serialized = EJSON.stringify(new Int32(42), { relaxed: false });
-//   expect(serialized).to.equal('{"$numberInt":"42"}');
-//   serialized = EJSON.stringify(
-//     {
-//       _id: { $nin: [new ObjectId('591801a468f9e7024b6235ea')] }
-//     },
-//     { relaxed: false }
-//   );
-//   expect(serialized).to.equal('{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}');
-//   serialized = EJSON.stringify(
-//     {
-//       _id: { $nin: [new ObjectID('591801a468f9e7024b6235ea')] }
-//     },
-//     { relaxed: false }
-//   );
-//   expect(serialized).to.equal('{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}');
-//   serialized = EJSON.stringify(
-//     {
-//       _id: { $nin: [new OldObjectID('591801a468f9e7024b6235ea')] }
-//     },
-//     { relaxed: false }
-//   );
-//   expect(serialized).to.equal('{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}');
-//
-//   serialized = EJSON.stringify(new Binary(new Uint8Array([1, 2, 3, 4, 5])), { relaxed: false });
-//   expect(serialized).to.equal('{"$binary":{"base64":"AQIDBAU=","subType":"00"}}');
-// });
-//
-// it('should correctly parse null values', function() {
-//   expect(EJSON.parse('null')).to.be.null;
-//   expect(EJSON.parse('[null]')[0]).to.be.null;
-//
-//   var input = '{"result":[{"_id":{"$oid":"591801a468f9e7024b623939"},"emptyField":null}]}';
-//   var parsed = EJSON.parse(input);
-//
-//   expect(parsed).to.deep.equal({
-//     result: [{ _id: new ObjectId('591801a468f9e7024b623939'), emptyField: null }]
-//   });
-// });
-//
+test({
+  name: 'should correctly deserialize using the default relaxed mode', 
+  fn():void {
+    // Deserialize the document using non strict mode
+    let doc: { [key:string]: any} = EJSON.parse(EJSON.stringify(doc0, null, 0));
+    // Validate the values
+    assertEquals(300, doc.int32Number);
+    assertEquals(200.2, doc.doubleNumber);
+    assertEquals(0x19000000000000, doc.longNumberIntFit);
+    assertEquals(19007199250000000.12, doc.doubleNumberIntFit);
+    // Deserialize the document using strict mode
+    doc = EJSON.parse(EJSON.stringify(doc0, null, 0), { relaxed: false });
+    // Validate the values
+    // expect(doc1.int32Number._bsontype).to.equal('Int32');
+    assertEquals(doc.int32Number._bsontype, "Int32")
+    // expect(doc1.doubleNumber._bsontype).to.equal('Double');
+        assertEquals(doc.doubleNumber._bsontype, "Double")
+    // expect(doc1.longNumberIntFit._bsontype).to.equal('Long');
+        assertEquals(doc.longNumberIntFit._bsontype, "Long")
+    // expect(doc1.doubleNumberIntFit._bsontype).to.equal('Long');
+        assertEquals(doc.doubleNumberIntFit._bsontype, "Long")
+  }
+  
+});
+
+test({
+  name: 'should correctly serialize, and deserialize using built-in BSON',
+  fn():void {
+    // Create a doc
+  let doc: {[key:string]:any} = { int32: new Int32(10)   };
+    // Serialize the document
+    const text:string = EJSON.stringify(doc, null, 0, { relaxed: false });
+    assertEquals(text,'{"int32":{"$numberInt":"10"}}');
+    // Deserialize the json in strict and non strict mode
+   doc = EJSON.parse(text, { relaxed: false });
+    // expect(doc2.int32._bsontype).to.equal('Int32');
+    assertEquals(doc.int32._bsontype, "Int32")
+    doc = EJSON.parse(text);
+    // expect(doc2.int32).to.equal(10);
+    assertEquals(doc.int32, 10)
+  }
+});
+
+test({
+  name: 'should correctly serialize bson types when they are values', 
+  fn():void {
+    let serialized: string = EJSON.stringify(new ObjectId('591801a468f9e7024b6235ea'), { relaxed: false });
+    // expect(serialized).to.equal('{"$oid":"591801a468f9e7024b6235ea"}');
+    assertEquals(serialized, '{"$oid":"591801a468f9e7024b6235ea"}')
+    // serialized = EJSON.stringify(new ObjectID('591801a468f9e7024b6235ea'), { relaxed: false });
+    // expect(serialized).to.equal('{"$oid":"591801a468f9e7024b6235ea"}');
+    // serialized = EJSON.stringify(new OldObjectID('591801a468f9e7024b6235ea'), { relaxed: false });
+    // expect(serialized).to.equal('{"$oid":"591801a468f9e7024b6235ea"}');
+
+    serialized = EJSON.stringify(new Int32(42), { relaxed: false });
+    // expect(serialized).to.equal('{"$numberInt":"42"}');
+    assertEquals(serialized, '{"$numberInt":"42"}')
+    serialized = EJSON.stringify(
+      {
+        _id: { $nin: [new ObjectId('591801a468f9e7024b6235ea')] }
+      },
+      { relaxed: false }
+    );
+    // expect(serialized).to.equal('{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}');
+    assertEquals(serialized, '{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}')
+    // serialized = EJSON.stringify(
+    //   {
+    //     _id: { $nin: [new ObjectID('591801a468f9e7024b6235ea')] }
+    //   },
+    //   { relaxed: false }
+    // );
+    // expect(serialized).to.equal('{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}');
+    // serialized = EJSON.stringify(
+    //   {
+    //     _id: { $nin: [new OldObjectID('591801a468f9e7024b6235ea')] }
+    //   },
+    //   { relaxed: false }
+    // );
+    // expect(serialized).to.equal('{"_id":{"$nin":[{"$oid":"591801a468f9e7024b6235ea"}]}}');
+
+    serialized = EJSON.stringify(new Binary(new Uint8Array([1, 2, 3, 4, 5])), { relaxed: false });
+    // expect(serialized).to.equal('{"$binary":{"base64":"AQIDBAU=","subType":"00"}}');
+    assertEquals(serialized, '{"$binary":{"base64":"AQIDBAU=","subType":"00"}}')
+  }
+});
+
+test({
+  name: 'should correctly parse null values', fn():void{
+    // expect(EJSON.parse('null')).to.be.null;
+    assertEquals(EJSON.parse("null"), null)
+    // expect(EJSON.parse('[null]')[0]).to.be.null;
+assertEquals(EJSON.parse("[null]")[0], null)
+    let input: string = '{"result":[{"_id":{"$oid":"591801a468f9e7024b623939"},"emptyField":null}]}';
+    let parsed : { [key:string]: any} = EJSON.parse(input);
+
+    assertEquals(parsed,{
+      result: [{ _id: new ObjectId('591801a468f9e7024b623939'), emptyField: null }]
+    });
+  }
+});
+
 // it('should correctly throw when passed a non-string to parse', function() {
 //   expect(() => {
 //     EJSON.parse({});
