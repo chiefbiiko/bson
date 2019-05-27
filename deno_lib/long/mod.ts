@@ -201,9 +201,12 @@ export class Long {
   }
 
   /** Creates a long  from its extended JSON representation.  */
-  static fromExtendedJSON(doc: { [key: string] :any}, options?: { relaxed?: boolean}): number | Long {
+  static fromExtendedJSON(
+    doc: { [key: string]: any },
+    options?: { relaxed?: boolean }
+  ): number | Long {
     const result: Long = Long.fromString(doc.$numberLong);
-     return options && options.relaxed ? result.toNumber() : result;
+    return options && options.relaxed ? result.toNumber() : result;
   }
 
   /** Creates a Long from its byte representation. */
@@ -791,7 +794,10 @@ export class Long {
     }
   }
 
-  toExtendedJSON(options?: { relaxed?: boolean }): number | { $numberLong: string} {
+  /** Extended JSON representation of a long. */
+  toExtendedJSON(options?: {
+    relaxed?: boolean;
+  }): number | { [key: string]: any } {
     if (options && options.relaxed) {
       return this.toNumber();
     }
