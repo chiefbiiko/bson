@@ -200,6 +200,12 @@ export class Long {
     );
   }
 
+  /** Creates a long  from its extended JSON representation.  */
+  static fromExtendedJSON(doc: { [key: string] :any}, options?: { relaxed?: boolean}): number | Long {
+    const result: Long = Long.fromString(doc.$numberLong);
+     return options && options.relaxed ? result.toNumber() : result;
+  }
+
   /** Creates a Long from its byte representation. */
   static fromBytes(
     bytes: Uint8Array,
@@ -247,51 +253,6 @@ export class Long {
       return (this.high >>> 0) * TWO_PWR_32_DBL + (this.low >>> 0);
     }
     return this.high * TWO_PWR_32_DBL + (this.low >>> 0);
-  }
-
-  /** Converts the Long to a string written in the specified radix. */
-  toString(radix: number = 10): string {
-    if (radix < 2 || 36 < radix) {
-      throw RangeError("Invalid radix.");
-    }
-    if (this.isZero()) {
-      return "0";
-    }
-    if (this.isNegative()) {
-      // Unsigned Longs are never negative
-      if (this.equals(MIN_VALUE)) {
-        // We need to change the Long value before it can be negated, so we remove
-        // the bottom-most digit in this base and then recurse to do the rest.
-        let radixLong: Long = Long.fromNumber(radix),
-          div: Long = this.divide(radixLong),
-          rem1: Long = div.multiply(radixLong).subtract(this);
-        return div.toString(radix) + rem1.toInt().toString(radix);
-      } else return "-" + this.negate().toString(radix);
-    }
-
-    // Do several (6) digits each time through the loop, so as to
-    // minimize the calls to the very expensive emulated div.
-    let radixToPower: Long = Long.fromNumber(
-        Math.pow(radix, 6),
-        this._unsigned
-      ),
-      rem: Long = this;
-    let result: string = "";
-    for (;;) {
-      let remDiv: Long = rem.divide(radixToPower),
-        intval: number =
-          rem.subtract(remDiv.multiply(radixToPower)).toInt() >>> 0,
-        digits: string = intval.toString(radix);
-      rem = remDiv;
-      if (rem.isZero()) {
-        return digits + result;
-      } else {
-        while (digits.length < 6) {
-          digits = "0" + digits;
-        }
-        result = "" + digits + result;
-      }
-    }
   }
 
   /** Gets the high 32 bits as a signed integer. */
@@ -783,6 +744,58 @@ export class Long {
       (lo >>> 8) & 0xff,
       lo & 0xff
     ]);
+  }
+
+  /** Converts the Long to a string written in the specified radix. */
+  toString(radix: number = 10): string {
+    if (radix < 2 || 36 < radix) {
+      throw RangeError("Invalid radix.");
+    }
+    if (this.isZero()) {
+      return "0";
+    }
+    if (this.isNegative()) {
+      // Unsigned Longs are never negative
+      if (this.equals(MIN_VALUE)) {
+        // We need to change the Long value before it can be negated, so we remove
+        // the bottom-most digit in this base and then recurse to do the rest.
+        let radixLong: Long = Long.fromNumber(radix),
+          div: Long = this.divide(radixLong),
+          rem1: Long = div.multiply(radixLong).subtract(this);
+        return div.toString(radix) + rem1.toInt().toString(radix);
+      } else return "-" + this.negate().toString(radix);
+    }
+
+    // Do several (6) digits each time through the loop, so as to
+    // minimize the calls to the very expensive emulated div.
+    let radixToPower: Long = Long.fromNumber(
+        Math.pow(radix, 6),
+        this._unsigned
+      ),
+      rem: Long = this;
+    let result: string = "";
+    for (;;) {
+      let remDiv: Long = rem.divide(radixToPower),
+        intval: number =
+          rem.subtract(remDiv.multiply(radixToPower)).toInt() >>> 0,
+        digits: string = intval.toString(radix);
+      rem = remDiv;
+      if (rem.isZero()) {
+        return digits + result;
+      } else {
+        while (digits.length < 6) {
+          digits = "0" + digits;
+        }
+        result = "" + digits + result;
+      }
+    }
+  }
+
+  toExtendedJSON(options?: { relaxed?: boolean }): number | { $numberLong: string} {
+    if (options && options.relaxed) {
+      return this.toNumber();
+    }
+    return { $numberLong: this.toString() };
   }
 }
 
