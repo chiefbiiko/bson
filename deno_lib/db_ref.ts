@@ -2,25 +2,24 @@
 export class DBRef {
   readonly _bsontype: string = "DBRef";
 
-  collection: string;
-  oid: string;
-  db: string;
-  fields: { [key: string]: any };
+  readonly collection: string;
+  readonly oid: any;
+  readonly db: string;
+  readonly fields: { [key: string]: any };
 
   /** Creates a DBRef type. */
   constructor(
     collection: string,
-    oid: string,
-    db: string,
-    fields: { [key: string]: any }
+    oid: any,
+    db?: string,
+    fields?: { [key: string]: any }
   ) {
-    // check if namespace has been provided
+    // Check if namespace has been provided
     const parts: string[] = collection.split(".");
     if (parts.length === 2) {
       db = parts.shift();
       collection = parts.shift();
     }
-
     this.collection = collection;
     this.oid = oid;
     this.db = db;
@@ -38,13 +37,6 @@ export class DBRef {
   // To ensure backwards  compatibility, let's expose "namespace"
   get namespace(): string {
     return this.collection;
-  }
-
-  set namespace(collection: string) {
-    if (!collection) {
-      throw new TypeError("Input must be a truthy string.");
-    }
-    this.collection = collection;
   }
 
   /** JSON fragment representation of a db reference. */

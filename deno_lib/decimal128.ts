@@ -1,8 +1,3 @@
-// 'use strict';
-//
-// let Long = require('./long');
-// const Buffer = require('buffer').Buffer;
-
 import { ZERO, Long } from "./long/mod.ts";
 
 const PARSE_STRING_REGEXP: RegExp = /^(\+|-)?(\d+|(\d*\.\d*))?(E|e)?([-+])?(\d+)?$/;
@@ -146,11 +141,12 @@ function multiply64x2(left: Long, right: Long): { high: Long; low: Long } {
 
 /** A class representation of the BSON Decimal128 type. */
 export class Decimal128 {
-  readonly _bsontype: "Decimal128";
+  readonly _bsontype: string = "Decimal128";
 
   readonly bytes: Uint8Array;
 
   constructor(bytes: Uint8Array) {
+    // TODO: make sur e length 16
     this.bytes = bytes;
   }
 

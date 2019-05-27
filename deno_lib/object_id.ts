@@ -21,6 +21,7 @@ export class ObjectId {
   constructor(id?: number | string | Uint8Array) {
     if (typeof id === "number" || id === null || id === undefined) {
       // The most common usecase (blank id, new objectId instance)
+      // For this case param id should be considered an int timestamp in s
       this.id = ObjectId.generate(id as number);
     } else if (typeof id === "string" && ObjectId.HEX_24.test(id)) {
       this.cachedHex = id.toLowerCase();
