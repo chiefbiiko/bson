@@ -7,7 +7,7 @@ import {
   JS_INT_MAX
 } from "./../constants.ts";
 
-export function calculateObjectSize(
+export function calculateSize(
   object: any,
   serializeFunctions: boolean,
   ignoreUndefined: boolean
