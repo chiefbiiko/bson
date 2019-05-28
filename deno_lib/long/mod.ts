@@ -4,6 +4,10 @@ const wasm: Wasm = loadWasm();
 const INT_CACHE: { [key: number]: Long } = {};
 const UINT_CACHE: { [key: number]: Long } = {};
 
+function integer(x: any): boolean {
+  return typeof x === "number" && x % 1 === 0;
+}
+
 /** A Long class for representing a 64 bit two's-complement integer value. */
 export class Long {
   /** An indicator used to reliably determine if an object is a Long or not. */
@@ -19,9 +23,13 @@ export class Long {
    * values as *signed* integers. See the from* functions below for more
    * convenient ways of constructing Longs.
    */
-  constructor(low: number, high: number, unsigned: boolean = false) {
-    this.low = low | 0;
-    this.high = high | 0;
+  constructor(low: number, high?: number, unsigned: boolean = false) {
+    if (integer(low) && integer(high)) {
+      this.low = low | 0;
+      this.high = high | 0;
+    } else {
+      throw new TypeError(`The two topmost params must be integers.`)
+    }
     this._unsigned = !!unsigned;
   }
 

@@ -21,7 +21,7 @@
 // const BSONSymbol = BSON.BSONSymbol;
 // const Timestamp = BSON.Timestamp;
 import { test, runIfMain } from "https://deno.land/x/testing/mod.ts";
-import { assert, assertEquals } from "https://deno.land/x/testing/asserts.ts";
+import { assert, assertEquals, assertThrows } from "https://deno.land/x/testing/asserts.ts";
 import { Long } from "./long/mod.ts"
 import { Double } from "./double.ts"
 import { Timestamp } from "./timestamp.ts"
@@ -201,150 +201,169 @@ test({
 assertEquals(EJSON.parse("[null]")[0], null)
     let input: string = '{"result":[{"_id":{"$oid":"591801a468f9e7024b623939"},"emptyField":null}]}';
     let parsed : { [key:string]: any} = EJSON.parse(input);
-
     assertEquals(parsed,{
       result: [{ _id: new ObjectId('591801a468f9e7024b623939'), emptyField: null }]
     });
   }
 });
 
-// it('should correctly throw when passed a non-string to parse', function() {
-//   expect(() => {
-//     EJSON.parse({});
-//   }).to.throw;
-// });
-//
-// it('should allow relaxed parsing by default', function() {
-//   const dt = new Date(1452124800000);
-//   const inputObject = {
-//     int: { $numberInt: '500' },
-//     long: { $numberLong: '42' },
-//     double: { $numberDouble: '24' },
-//     date: { $date: { $numberLong: '1452124800000' } }
-//   };
-//
-//   const parsed = EJSON.parse(JSON.stringify(inputObject));
-//   expect(parsed).to.eql({
-//     int: 500,
-//     long: 42,
-//     double: 24,
-//     date: dt
-//   });
-// });
-//
-// it('should allow regexp', function() {
-//   const parsedRegExp = EJSON.stringify({ test: /some-regex/i });
-//   const parsedBSONRegExp = EJSON.stringify(
-//     { test: new BSONRegExp('some-regex', 'i') },
-//     { relaxed: true }
-//   );
-//   expect(parsedRegExp).to.eql(parsedBSONRegExp);
-// });
-//
-// it('should serialize from BSON object to EJSON object', function() {
-//   const doc = {
-//     binary: new Binary(''),
-//     code: new Code('function() {}'),
-//     dbRef: new DBRef('tests', new Int32(1), 'test'),
-//     decimal128: new Decimal128(128),
-//     double: new Double(10.1),
-//     int32: new Int32(10),
-//     long: new Long(234),
-//     maxKey: new MaxKey(),
-//     minKey: new MinKey(),
-//     objectId: ObjectId.createFromHexString('111111111111111111111111'),
-//     objectID: ObjectID.createFromHexString('111111111111111111111111'),
-//     oldObjectID: OldObjectID.createFromHexString('111111111111111111111111'),
-//     bsonRegExp: new BSONRegExp('hello world', 'i'),
-//     symbol: new BSONSymbol('symbol'),
-//     timestamp: new Timestamp()
-//   };
-//
-//   const result = EJSON.serialize(doc, { relaxed: false });
-//   expect(result).to.deep.equal({
-//     binary: { $binary: { base64: '', subType: '00' } },
-//     code: { $code: 'function() {}' },
-//     dbRef: { $ref: 'tests', $id: { $numberInt: '1' }, $db: 'test' },
-//     decimal128: { $numberDecimal: '0E-6176' },
-//     double: { $numberDouble: '10.1' },
-//     int32: { $numberInt: '10' },
-//     long: { $numberLong: '234' },
-//     maxKey: { $maxKey: 1 },
-//     minKey: { $minKey: 1 },
-//     objectId: { $oid: '111111111111111111111111' },
-//     objectID: { $oid: '111111111111111111111111' },
-//     oldObjectID: { $oid: '111111111111111111111111' },
-//     bsonRegExp: { $regularExpression: { pattern: 'hello world', options: 'i' } },
-//     symbol: { $symbol: 'symbol' },
-//     timestamp: { $timestamp: { t: 0, i: 0 } }
-//   });
-// });
-//
-// it('should deserialize from EJSON object to BSON object', function() {
-//   const doc = {
-//     binary: { $binary: { base64: '', subType: '00' } },
-//     code: { $code: 'function() {}' },
-//     dbRef: { $ref: 'tests', $id: { $numberInt: '1' }, $db: 'test' },
-//     decimal128: { $numberDecimal: '0E-6176' },
-//     double: { $numberDouble: '10.1' },
-//     int32: { $numberInt: '10' },
-//     long: { $numberLong: '234' },
-//     maxKey: { $maxKey: 1 },
-//     minKey: { $minKey: 1 },
-//     objectId: { $oid: '111111111111111111111111' },
-//     objectID: { $oid: '111111111111111111111111' },
-//     oldObjectID: { $oid: '111111111111111111111111' },
-//     bsonRegExp: { $regularExpression: { pattern: 'hello world', options: 'i' } },
-//     symbol: { $symbol: 'symbol' },
-//     timestamp: { $timestamp: { t: 0, i: 0 } }
-//   };
-//
-//   const result = EJSON.deserialize(doc, { relaxed: false });
-//
-//   // binary
-//   expect(result.binary).to.be.an.instanceOf(BSON.Binary);
-//   // code
-//   expect(result.code).to.be.an.instanceOf(BSON.Code);
-//   expect(result.code.code).to.equal('function() {}');
-//   // dbRef
-//   expect(result.dbRef).to.be.an.instanceOf(BSON.DBRef);
-//   expect(result.dbRef.collection).to.equal('tests');
-//   expect(result.dbRef.db).to.equal('test');
-//   // decimal128
-//   expect(result.decimal128).to.be.an.instanceOf(BSON.Decimal128);
-//   // double
-//   expect(result.double).to.be.an.instanceOf(BSON.Double);
-//   expect(result.double.value).to.equal(10.1);
-//   // int32
-//   expect(result.int32).to.be.an.instanceOf(BSON.Int32);
-//   expect(result.int32.value).to.equal('10');
-//   //long
-//   expect(result.long).to.be.an.instanceOf(BSON.Long);
-//   // maxKey
-//   expect(result.maxKey).to.be.an.instanceOf(BSON.MaxKey);
-//   // minKey
-//   expect(result.minKey).to.be.an.instanceOf(BSON.MinKey);
-//   // objectID
-//   expect(result.objectId.toString()).to.equal('111111111111111111111111');
-//   expect(result.objectID.toString()).to.equal('111111111111111111111111');
-//   expect(result.oldObjectID.toString()).to.equal('111111111111111111111111');
-//   //bsonRegExp
-//   expect(result.bsonRegExp).to.be.an.instanceOf(BSON.BSONRegExp);
-//   expect(result.bsonRegExp.pattern).to.equal('hello world');
-//   expect(result.bsonRegExp.options).to.equal('i');
-//   // symbol
-//   expect(result.symbol.toString()).to.equal('symbol');
-//   // timestamp
-//   expect(result.timestamp).to.be.an.instanceOf(BSON.Timestamp);
-// });
-//
-// it('should return a native number for a double in relaxed mode', function() {
-//   const result = EJSON.deserialize({ test: 34.12 }, { relaxed: true });
-//   expect(result.test).to.equal(34.12);
-//   expect(result.test).to.be.a('number');
-// });
-//
-// it('should work for function-valued and array-valued replacer parameters', function() {
+test({
+  name: 'should correctly throw when passed a non-string to parse', fn():void {
+    assertThrows(() => EJSON.parse({}))
+  }
+});
+
+test({
+  name: 'should allow relaxed parsing by default', fn():void {
+    const input: { [key:string]: any} = {
+      int: { $numberInt: '500' },
+      long: { $numberLong: '42' },
+      double: { $numberDouble: '24' },
+      date: { $date: { $numberLong: '1452124800000' } }
+    };
+    const parsed: {[key:string]: any} = EJSON.parse(JSON.stringify(input));
+    assertEquals(parsed,{
+      int: 500,
+      long: 42,
+      double: 24,
+      date: new Date(1452124800000)
+    });
+  }
+});
+
+test({
+  name:'should allow regexp', fn():void {
+    const parsedRegExp: string = EJSON.stringify({ test: /some-regex/i });
+    const parsedBSONRegExp: string = EJSON.stringify(
+      { test: new BSONRegExp('some-regex', 'i') },
+      { relaxed: true }
+    );
+    // expect(parsedRegExp).to.eql(parsedBSONRegExp);
+    assertEquals(parsedBSONRegExp, parsedRegExp)
+  }
+});
+
+test({
+  name: 'should serialize from BSON object to EJSON object', fn():void {
+    const bson: { [key:string]: any} = {
+      binary: new Binary(''),
+      code: new Code('function() {}'),
+      dbRef: new DBRef('tests', new Int32(1), 'test'),
+      decimal128: Decimal128.fromString("128"),
+      double: new Double(10.1),
+      int32: new Int32(10),
+      long: Long.fromNumber(234),
+      maxKey: new MaxKey(),
+      minKey: new MinKey(),
+      objectId: ObjectId.fromHexString('111111111111111111111111'),
+      // objectID: ObjectID.createFromHexString('111111111111111111111111'),
+      // oldObjectID: OldObjectID.createFromHexString('111111111111111111111111'),
+      bsonRegExp: new BSONRegExp('hello world', 'i'),
+      symbol: new BSONSymbol('symbol'),
+      timestamp: Timestamp.fromString("1559018785970")
+    };
+    const ejson: { [key:string]: any}  = {
+      binary: { $binary: { base64: '', subType: '00' } },
+      code: { $code: 'function() {}' },
+      dbRef: { $ref: 'tests', $id: { $numberInt: '1' }, $db: 'test' },
+      decimal128: { $numberDecimal: '128' },
+      double: { $numberDouble: '10.1' },
+      int32: { $numberInt: '10' },
+      long: { $numberLong: '234' },
+      maxKey: { $maxKey: "9223372036854775807" },
+      minKey: { $minKey: "-9223372036854775808" },
+      objectId: { $oid: '111111111111111111111111' },
+      // objectID: { $oid: '111111111111111111111111' },
+      // oldObjectID: { $oid: '111111111111111111111111' },
+      bsonRegExp: { $regularExpression: { pattern: 'hello world', options: 'i' } },
+      symbol: { $symbol: 'symbol' },
+      timestamp: { $timestamp: { t: 362, i: 4240624818 } }
+    }
+    assertEquals(EJSON.serialize(bson, { relaxed: false }),ejson);
+  }
+});
+
+test({
+  name: 'should deserialize from EJSON object to BSON object', fn():void {
+    const ejson: { [key:string]: any} = {
+      binary: { $binary: { base64: '', subType: '00' } },
+      code: { $code: 'function() {}' },
+      dbRef: { $ref: 'tests', $id: { $numberInt: '1' }, $db: 'test' },
+      decimal128: { $numberDecimal: '41999999999999999999999999999' },
+      double: { $numberDouble: '10.1' },
+      int32: { $numberInt: '10' },
+      long: { $numberLong: '234' },
+      maxKey: { $maxKey: 1 },
+      minKey: { $minKey: 1 },
+      objectId: { $oid: '111111111111111111111111' },
+      // objectID: { $oid: '111111111111111111111111' },
+      // oldObjectID: { $oid: '111111111111111111111111' },
+      bsonRegExp: { $regularExpression: { pattern: 'hello world', options: 'i' } },
+      symbol: { $symbol: 'symbol' },
+      timestamp: { $timestamp: { t: 362, i: 4240624818  } }
+    };
+    const bson: {[key:string]: any} = EJSON.deserialize(ejson, { relaxed: false });
+    // binary
+    assert(bson.binary instanceof Binary);
+    assertEquals(bson.binary.length, 0)
+    // code
+    // assertEquals(bson.code.constructor, Code);
+    assert(bson.code instanceof Code)
+    assertEquals(bson.code.code,'function() {}');
+    // dbRef
+    assert(bson.dbRef instanceof DBRef);
+    assertEquals(bson.dbRef.collection, 'tests');
+    assertEquals(bson.dbRef.db, 'test');
+    // decimal128
+    assert(bson.decimal128 instanceof Decimal128);
+    assertEquals(bson.decimal128.toString(), "41999999999999999999999999999")
+    // double
+    assert(bson.double instanceof Double);
+    assertEquals(bson.double.value, 10.1);
+    // int32
+    assert(bson.int32 instanceof Int32);
+    assertEquals(bson.int32.value, 10);
+    //long
+    assert(bson.long instanceof  Long);
+    assertEquals(bson.long.toInt(), 234)
+    // maxKey
+    assert(bson.maxKey instanceof MaxKey);
+    assertEquals(bson.maxKey.toString(), String((1n << 63n) - 1n))
+    // minKey
+    assert(bson.minKey instanceof MinKey);
+    assertEquals(bson.minKey.toString(), String(-1n << 63n))
+    // objectID
+    assert(bson.objectId instanceof ObjectId)
+    assertEquals(bson.objectId.toString(), '111111111111111111111111');
+    // expect(result.objectID.toString()).to.equal('111111111111111111111111');
+    // expect(result.oldObjectID.toString()).to.equal('111111111111111111111111');
+    //bsonRegExp
+    assert(bson.bsonRegExp instanceof BSONRegExp);
+    assertEquals(bson.bsonRegExp.pattern, 'hello world');
+    assertEquals(bson.bsonRegExp.options, 'i');
+    // symbol
+    assert(bson.symbol instanceof BSONSymbol)
+    assertEquals(bson.symbol.toString(), "symbol")
+    // timestamp
+    // expect(result.timestamp).to.be.an.instanceOf(BSON.Timestamp);
+    assert(bson.timestamp instanceof Timestamp)
+  }
+});
+
+test({
+  name: 'should return a native number for a double in relaxed mode', fn():void {
+    const expected: number = 419.419
+    let fraud = EJSON.deserialize({money: { $numberDouble: "419.419"} }, { relaxed: true });
+    // expect(fraud).to.equal(34.12);
+    assertEquals(fraud.money,expected)
+    fraud = EJSON.deserialize({money: { $numberDouble: 419.419} }, { relaxed: true });
+      assertEquals(fraud.money,expected)
+    // expect(fraud).to.be.a('number');
+    // assertEquals(typeof fraud, "number")
+  }
+});
+
+// test('should work for function-valued and array-valued replacer parameters', function() {
 //   const doc = { a: new Int32(10), b: new Int32(10) };
 //
 //   var replacerArray = ['a', '$numberInt'];
@@ -367,7 +386,7 @@ assertEquals(EJSON.parse("[null]")[0], null)
 // if (!usingOldBSON) {
 //   it.skip('skipping 4.x/1.x interop tests', () => {});
 // } else {
-//   it('should interoperate 4.x with 1.x versions of this library', function() {
+//   test('should interoperate 4.x with 1.x versions of this library', function() {
 //     const buffer = Buffer.alloc(64);
 //     for (var i = 0; i < buffer.length; i++) {
 //       buffer[i] = i;
@@ -471,7 +490,7 @@ assertEquals(EJSON.parse("[null]")[0], null)
 //
 //   // Must special-case the test for MinKey, because of #310.  When #310 is fixed and is picked up
 //   // by mongodb-core, then remove this test case and uncomment the MinKey checks in the test case above
-//   it('should interop with MinKey 1.x and 4.x, except the case that #310 breaks', function() {
+//   test('should interop with MinKey 1.x and 4.x, except the case that #310 breaks', function() {
 //     if (!usingOldBSON) {
 //       it.skip('interop tests', () => {});
 //       return;
@@ -524,16 +543,18 @@ assertEquals(EJSON.parse("[null]")[0], null)
 //     expect(resultNew).to.deep.equal(ejsonExpected);
 //   });
 // }
-//
-// it('should throw if invalid BSON types are input to EJSON serializer', function() {
-//   const oid = new ObjectId('111111111111111111111111');
-//   const badBsonType = Object.assign({}, oid, { _bsontype: 'bogus' });
-//   const badDoc = { bad: badBsonType };
-//   const badArray = [oid, badDoc];
-//   // const badMap = new Map([['a', badBsonType], ['b', badDoc], ['c', badArray]]);
-//   expect(() => EJSON.serialize(badDoc)).to.throw();
-//   expect(() => EJSON.serialize(badArray)).to.throw();
-//   // expect(() => EJSON.serialize(badMap)).to.throw(); // uncomment when EJSON supports ES6 Map
-// });
+
+test({name: 'should throw if invalid BSON types are input to EJSON serializer', fn():void {
+  const oid: ObjectId = new ObjectId('111111111111111111111111');
+  const badBsonType: {[key:string]: any} = Object.assign({}, oid, { _bsontype: 'bogus' });
+  const badDoc: {[key:string]: any} = { bad: badBsonType };
+  const badArray: {[key:string]: any}[] = [oid, badDoc];
+  // const badMap = new Map([['a', badBsonType], ['b', badDoc], ['c', badArray]]);
+  // expect(() => EJSON.serialize(badDoc)).to.throw();
+  assertThrows(() => EJSON.serialize(badDoc))
+  // expect(() => EJSON.serialize(badArray)).to.throw();
+  assertThrows(() => EJSON.serialize(badArray))
+  // expect(() => EJSON.serialize(badMap)).to.throw(); // uncomment when EJSON supports ES6 Map
+}});
 
 runIfMain(import.meta, { parallel: true})

@@ -12,6 +12,11 @@ export class MaxKey {
     return new MaxKey();
   }
 
+  /** String representation of a maxkey's value. */
+  toString(): string {
+    return this.value.toString();
+  }
+
   /** Extended JSON represtation of a maxkey. */
   toExtendedJSON() {
     return { $maxKey: this.value.toString() };

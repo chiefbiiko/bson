@@ -146,7 +146,9 @@ export class Decimal128 {
   readonly bytes: Uint8Array;
 
   constructor(bytes: Uint8Array) {
-    // TODO: make sur e length 16
+    if (!bytes || bytes.byteLength !== 16) {
+      throw new TypeError("Input must be an Uint8Array of length 16.")
+    }
     this.bytes = bytes;
   }
 

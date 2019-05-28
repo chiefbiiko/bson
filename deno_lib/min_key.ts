@@ -11,6 +11,11 @@ export class MinKey {
   static fromExtendedJSON() {
     return new MinKey();
   }
+  
+  /** String representation of a minkey's value. */
+  toString(): string {
+    return this.value.toString();
+  }
 
   /** Extended JSON represtation of a minkey. */
   toExtendedJSON() {

@@ -138,7 +138,7 @@ export class Binary {
   }
 
   /** Length of a binary. */
-  length(): number {
+  get length(): number {
     return this.position;
   }
 
