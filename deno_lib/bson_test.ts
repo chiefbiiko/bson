@@ -71,7 +71,7 @@ function translate(doc: { [key:string]: any}, object: { [key:string]: any}) : { 
 }
 
 test({
-  name: "Passes all corrupt BSON scenarios",
+  name: "all corrupt BSON scenarios",
   fn(): void {
     for (const corruptTestVector of corruptTestVectors) {
       assertThrows(() => BSON.deserialize(encode(corruptTestVector.encoded, "hex")))
@@ -80,7 +80,7 @@ test({
 })
 
 test({
-  name: "Passes all valid BSON scenarios",
+  name: "all valid BSON scenarios",
   fn():void {
     /*
     // Iterate over all the results
@@ -102,20 +102,22 @@ test({
     */
     let expectedBson: Uint8Array;
     let expectedDoc: { [key:string]: any};
-    for (const validTestVector of validTestVectors.slice(0, 1)) {
+    let bson: Uint8Array;
+    let doc: { [key:string]: any};
+    for (const validTestVector of validTestVectors) {
       // assertThrows(() => BSON.deserialize(encode(corruptTestVector.encoded, "hex")))
-      expectedBson = encode(validTestVector.encoded, "hex")
-      expectedDoc = translate(validTestVector.document, {})
-      const bson: Uint8Array = BSON.serialize(expectedDoc)
+      expectedBson = encode(validTestVector.encoded, "hex");
+      expectedDoc = translate(validTestVector.document, {});
+      bson = BSON.serialize(expectedDoc);
       /////////
-      console.error("bson", String(bson), "expectedBson", String(expectedBson))
+      console.error("bson", String(bson), "expectedBson", String(expectedBson));
       ////////
-      assertEquals(bson, expectedBson)
-      const doc: { [key:string]: any} = BSON.deserialize(bson, {promoteLongs: false})
-      assertEquals(doc, expectedDoc)
+      assertEquals(bson, expectedBson);
+      doc = BSON.deserialize(bson, {promoteLongs: false});
+      assertEquals(doc, expectedDoc);
     }
   }
 })
 
 
-runIfMain(import.meta, { parallel: true})
+runIfMain(import.meta)

@@ -40,42 +40,7 @@ const JS_INT_MIN_LONG: Long = Long.fromNumber(CONSTANTS.JS_INT_MIN);
 
 const functionCache: { [key:string]: Function} = {};
 
-function deserializeObject(buf: Uint8Array, index: number, options: {
-  // Evaluate functions in the BSON document scoped to the object deserialized?
-  evalFunctions?: boolean,
-  // Cache evaluated functions for reuse?
-  cacheFunctions?: boolean,
-  // Use a crc32 code for caching, otherwise use the string of the function.
-  cacheFunctionsCrc32?: boolean,
-  // Downgrade Long to Number if it's smaller than 53 bits
-  promoteLongs?: boolean,
-  // Deserializing a Binary will return it as a node.js Buffer instance.
-  promoteBuffers?: boolean,
-  // Deserializing will promote BSON values to their closest nodejs types.
-  promoteValues?: boolean,
-  // Allow to specify what fields we wish to return as unserialized raw buf.
-  fieldsAsRaw?: any,
-  // Return BSON regular expressions as BSONRegExp instances.
-  bsonRegExp?: boolean,
-  // Allows the buf to be larger than the parsed BSON object.
-  allowObjectSmallerThanBufferSize?: boolean
-  // Offset from which to start deserialization.
-  index?: number,
-  // Return raw bson buffer instead of parsing it?
-  raw?: boolean
-} = {
-  evalFunctions:false,
-  cacheFunctions: false,
-  cacheFunctionsCrc32: false,
-  promoteLongs: true,
-  promoteBuffers: false,
-  promoteValues: false,
- fieldsAsRaw: null,
-  bsonRegExp: false,
-  allowObjectSmallerThanBufferSize: false,
-  index: 0,
-  raw: false
-}, isArray: boolean= false):any {
+function deserializeObject(buf: Uint8Array, index: number, options: DeserializationOptions = {}, isArray: boolean= false):any {
   // const evalFunctions = options['evalFunctions'] == null ? false : options['evalFunctions'];
   // const cacheFunctions = options['cacheFunctions'] == null ? false : options['cacheFunctions'];
   // const cacheFunctionsCrc32 =
@@ -651,8 +616,8 @@ function isolateEval(functionString: string): Function {
   return value;
 }
 
-/** Deserializes a JavaScript object from a bson buffer. */
-export function deserialize(buf: Uint8Array, options: {
+/** Deserealization options. */
+export interface DeserializationOptions {
   // Evaluate functions in the BSON document scoped to the object deserialized?
   evalFunctions?: boolean,
   // Cache evaluated functions for reuse?
@@ -672,36 +637,40 @@ export function deserialize(buf: Uint8Array, options: {
   // Allows the buf to be larger than the parsed BSON object.
   allowObjectSmallerThanBufferSize?: boolean
   // Offset from which to start deserialization.
-  index?: number,
+  offset?: number,
   // Return raw bson buffer instead of parsing it?
   raw?: boolean
-} = {
-  evalFunctions:false,
-  cacheFunctions: false,
-  cacheFunctionsCrc32: false,
-  promoteLongs: true,
-  promoteBuffers: false,
-  promoteValues: false,
- fieldsAsRaw: null,
-  bsonRegExp: false,
-  allowObjectSmallerThanBufferSize: false,
-  index: 0,
-  raw: false
-}, isArray: boolean = false): any {
+}
+
+/** Deserializes a JavaScript object from a bson buffer. */
+export function deserialize(buf: Uint8Array, options: DeserializationOptions = {}, isArray: boolean = false): any {
   if (buf === null) {
     throw new TypeError("The input buffer must not be null.")
   }
   // options = options == null ? {} : options;
   // const index = options && options.index ? options.index : 0;
-  const offset: number = options.index
+  // const offset: number = index
   // Read the document size
-  const size: number =
-    buf[offset] |
-    (buf[offset+ 1] << 8) |
-    (buf[offset + 2] << 16) |
-    (buf[offset + 3] << 24);
+  options = Object.assign({}, {
+    evalFunctions : false,
+    cacheFunctions: false,
+    cacheFunctionsCrc32: false,
+    promoteLongs: true,
+    promoteBuffers: false,
+    promoteValues: false,
+   fieldsAsRaw: null,
+    bsonRegExp: false,
+    allowObjectSmallerThanBufferSize: false,
+    offset: 0,
+    raw: false
+  },options)
+  const offset: number = options.offset;
+  const size: number = buf[offset] | (buf[offset+ 1] << 8) | (buf[offset + 2] << 16) | (buf[offset + 3] << 24);
 
   if (size < 5) {
+    ////////////////
+    console.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> buf", String(buf), "offset", offset)
+    //////////////////
     throw new TypeError(`bson size must be >= 5, is ${size}.`);
   }
 
@@ -715,7 +684,7 @@ export function deserialize(buf: Uint8Array, options: {
 
   if (size + offset > buf.length) {
     throw new TypeError(
-      `bson size ${size} + options.index ${offset} must be <= buf length ${buf.byteLength}.`
+      `bson size ${size} + index ${offset} must be <= buf length ${buf.byteLength}.`
     );
   }
 
