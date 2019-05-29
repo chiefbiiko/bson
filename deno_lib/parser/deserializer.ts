@@ -16,102 +16,29 @@
 // const CONSTANTS = require('../CONSTANTS');
 // const validateUtf8 = require('../validate_utf8').validateUtf8;
 
-import { Long } from "./long/mod.ts"
-import { Double } from "./double.ts"
-import { Timestamp } from "./timestamp.ts"
-import {ObjectId } from "./object_id.ts"
-import {BSONRegExp} from "./regexp.ts"
+import { Long } from "./../long/mod.ts"
+import { Double } from "./../double.ts"
+import { Timestamp } from "./../timestamp.ts"
+import {ObjectId } from "./../object_id.ts"
+import {BSONRegExp} from "./../regexp.ts"
 // import {BSONSymbol} from "./symbol.ts"
-import {Int32} from "./int32.ts"
-import {Code} from "./code.ts"
-import {Decimal128} from "./decimal128.ts"
-import {MinKey} from "./min_key.ts"
-import {MaxKey} from "./max_key.ts"
-import { DBRef} from "./db_ref.ts"
-import {Binary} from "./binary.ts"
-import * as CONSTANTS from "./CONSTANTS.ts"
-import { validateUtf8} from "./validate_utf8.ts"
-import { crc32 } from "./crc32.ts";
-import  {decode} from "./transcoding.ts"
+import {Int32} from "./../int32.ts"
+import {Code} from "./../code.ts"
+import {Decimal128} from "./../decimal128.ts"
+import {MinKey} from "./../min_key.ts"
+import {MaxKey} from "./../max_key.ts"
+import { DBRef} from "./../db_ref.ts"
+import {Binary} from "./../binary.ts"
+import * as CONSTANTS from "./../constants.ts"
+import { validateUtf8} from "./../validate_utf8.ts"
+import { crc32 } from "./../crc32.ts";
+import  {decode} from "./../transcoding.ts"
 
 // Internal long versions
-const JS_INT_MAX_LONG = Long.fromNumber(CONSTANTS.JS_INT_MAX);
-const JS_INT_MIN_LONG = Long.fromNumber(CONSTANTS.JS_INT_MIN);
+const JS_INT_MAX_LONG: Long = Long.fromNumber(CONSTANTS.JS_INT_MAX);
+const JS_INT_MIN_LONG: Long = Long.fromNumber(CONSTANTS.JS_INT_MIN);
 
 const functionCache: { [key:string]: Function} = {};
-
-function deserialize(buf: Uint8Array, options: {
-  // Evaluate functions in the BSON document scoped to the object deserialized?
-  evalFunctions?: boolean,
-  // Cache evaluated functions for reuse?
-  cacheFunctions?: boolean,
-  // Use a crc32 code for caching, otherwise use the string of the function.
-  cacheFunctionsCrc32?: boolean,
-  // Downgrade Long to Number if it's smaller than 53 bits
-  promoteLongs?: boolean,
-  // Deserializing a Binary will return it as a node.js Buffer instance.
-  promoteBuffers?: boolean,
-  // Deserializing will promote BSON values to their closest nodejs types.
-  promoteValues?: boolean,
-  // Allow to specify what fields we wish to return as unserialized raw buf.
-  fieldsAsRaw?: any,
-  // Return BSON regular expressions as BSONRegExp instances.
-  bsonRegExp?: boolean,
-  // Allows the buf to be larger than the parsed BSON object.
-  allowObjectSmallerThanBufferSize?: boolean
-  // Offset from which to start deserialization.
-  index?: number,
-  // Return raw bson buffer instead of parsing it?
-  raw?: boolean
-} = {
-  evalFunctions:false,
-  cacheFunctions: false,
-  cacheFunctionsCrc32: false,
-  promoteLongs: true,
-  promoteBuffers: false,
-  promoteValues: false,
- fieldsAsRaw: null,
-  bsonRegExp: false,
-  allowObjectSmallerThanBufferSize: false,
-  index: 0,
-  raw: false
-}, isArray: boolean = false): any {
-  // options = options == null ? {} : options;
-  // const index = options && options.index ? options.index : 0;
-  const offset: number = options.index
-  // Read the document size
-  const size: number =
-    buf[offset] |
-    (buf[offset+ 1] << 8) |
-    (buf[offset + 2] << 16) |
-    (buf[offset + 3] << 24);
-
-  if (size < 5) {
-    throw new TypeError(`bson size must be >= 5, is ${size}.`);
-  }
-
-  if (options.allowObjectSmallerThanBufferSize && buf.length < size) {
-    throw new TypeError(`buf length ${buf.length} must be >= bson size ${size}.`);
-  }
-
-  if (!options.allowObjectSmallerThanBufferSize && buf.length !== size) {
-    throw new TypeError(`buf length ${buf.length} must === bson size ${size}.`);
-  }
-
-  if (size + offset > buf.length) {
-    throw new TypeError(
-      `bson size ${size} + options.index ${offset} must be <= buf length ${buf.byteLength}.`
-    );
-  }
-
-  // Illegal end value
-  if (buf[offset + size - 1] !== 0) {
-    throw new TypeError("One object, sized correctly, with a spot for an EOO, but the EOO isn't 0x00.");
-  }
-
-  // Start deserializtion
-  return deserializeObject(buf, offset, options, isArray);
-}
 
 function deserializeObject(buf: Uint8Array, index: number, options: {
   // Evaluate functions in the BSON document scoped to the object deserialized?
@@ -352,7 +279,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       // Assign the new Decimal128 value
       const decimal128: Decimal128 = new Decimal128(bytes);
       // If we have an alternative mapper use that
-      object[name] = decimal128.toObject ? decimal128.toObject() : decimal128;
+      object[name] = decimal128["toObject"] ? decimal128["toObject"]() : decimal128;
     } else if (elementType === CONSTANTS.BSON_DATA_BINARY) {
       let binarySize: number =
         buf[index++] |
@@ -550,7 +477,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       if (options.evalFunctions) {
         // If we have cache enabled let's look for the md5 of the function in the cache
         if (options.cacheFunctions) {
-          const hash: string = options.cacheFunctionsCrc32 ? crc32(functionString) : functionString;
+          const hash: number | string = options.cacheFunctionsCrc32 ? crc32(functionString) : functionString;
           // Got to do this to avoid V8 deoptimizing the call due to finding eval
           object[name] = isolateEvalWithHash(functionCache, hash, functionString, object);
         } else {
@@ -595,8 +522,6 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       // Parse the element
       const _index: number = index;
 
-//////////////////////////////////////////////////////////
-
       // Decode the size of the object document
       const objectSize: number =
         buf[index] |
@@ -610,19 +535,19 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
 
       // Check if field length is to short
       if (totalSize < 4 + 4 + objectSize + strSize) {
-        throw new TypeError('code_w_scope total size is too short, truncating scope.');
+        throw new TypeError('Code with scope total size is too short, truncating scope.');
       }
 
       // Check if totalSize field is to long
       if (totalSize > 4 + 4 + objectSize + strSize) {
-        throw new Error('code_w_scope total size is too long, clips outer document.');
+        throw new TypeError('Code with scope total size is too long, clips outer document.');
       }
 
       // If we are evaluating the functions
       if (options.evalFunctions) {
         // If we have cache enabled let's look for the md5 of the function in the cache
         if (options.cacheFunctions) {
-          const hash: number = options.cacheFunctionsCrc32 ? crc32(functionString) : functionString;
+          const hash: number | string = options.cacheFunctionsCrc32 ? crc32(functionString) : functionString;
           // Got to do this to avoid V8 deoptimizing the call due to finding eval
           object[name] = isolateEvalWithHash(functionCache, hash, functionString, object);
         } else {
@@ -648,52 +573,51 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       )
       {  throw new TypeError('Bad string length in bson.');}
       // Namespace
-      if (!validateUtf8(buf, index, index + strSize - 1)) {
+      if (!validateUtf8(buf.subarray(index, index + strSize - 1))) {
         throw new TypeError('Invalid UTF-8 string in BSON document.');
       }
-      const namespace = buf.toString('utf8', index, index + strSize - 1);
+      // const namespace = buf.toString('utf8', index, index + strSize - 1);
+      const namespace: string = decode(buf.subarray(index, index + strSize - 1), "utf8")
       // Update parse index position
-      index = index + strSize;
+      index += strSize;
 
       // Read the oid
-      const oidBuffer = Buffer.alloc(12);
-      buf.copy(oidBuffer, 0, index, index + 12);
-      const oid = new ObjectId(oidBuffer);
+      // const oidBuffer = Buffer.alloc(12);
+      // buf.copy(oidBuffer, 0, index, index + 12);
+      const oid: ObjectId = new ObjectId(buf.slice(index, index + 12)/*oidBuffer*/);
 
       // Update the index
-      index = index + 12;
+      index += 12;
 
       // Upgrade to DBRef type
       object[name] = new DBRef(namespace, oid);
     } else {
-      throw new Error(
-        'Detected unknown BSON type ' +
-          elementType.toString(16) +
-          ' for fieldname "' +
-          name +
-          '", are you using the latest BSON parser?'
+      throw new TypeError(`Detected unknown BSON type ${elementType.toString(16)} for fieldname "${name}", are you using the latest BSON parser?`
       );
     }
   }
 
   // Check if the deserialization was against a valid array/object
   if (size !== index - startIndex) {
-    if (isArray) throw new Error('corrupt array bson');
-    throw new Error('corrupt object bson');
+    // if (isArray) {throw new TypeError('Corrupt array bson.');}
+    throw new TypeError(`Corrupt ${isArray ? "array" : "object"} bson.`);
   }
 
   // check if object's $ keys are those of a DBRef
-  const dollarKeys = Object.keys(object).filter(k => k.startsWith('$'));
-  let valid = true;
-  dollarKeys.forEach(k => {
-    if (['$ref', '$id', '$db'].indexOf(k) === -1) valid = false;
-  });
+  const valid: boolean = Object.keys(object)
+    .filter(k => k.startsWith('$'))
+    .reduce((acc, k): number => k === "$ref" || k === "$id" || k === "$db" ? ++acc : --acc, 0) === 3;
+  // const dollarKeys: string[] = Object.keys(object).filter(k => k.startsWith('$'));
+  // let valid: boolean = true;
+  // dollarKeys.forEach(k => {
+  //   if (['$ref', '$id', '$db'].indexOf(k) === -1) valid = false;
+  // });
 
   // if a $key not in "$ref", "$id", "$db", don't make a DBRef
-  if (!valid) return object;
+  if (!valid) {return object;}
 
-  if (object['$id'] != null && object['$ref'] != null) {
-    let copy = Object.assign({}, object);
+  if (object.$id && object.$ref) {
+    const copy: { [key:string]:any } = Object.assign({}, object);
     delete copy.$ref;
     delete copy.$id;
     delete copy.$db;
@@ -703,18 +627,13 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
   return object;
 }
 
-/**
- * Ensure eval is isolated.
- *
- * @ignore
- * @api private
- */
-function isolateEvalWithHash(functionCache, hash, functionString, object) {
+/** Ensures eval is isolated. */
+function isolateEvalWithHash(functionCache: { [key:string]: Function}, hash: number | string, functionString: string, object: any): Function {
   // Contains the value we are going to set
-  let value = null;
+  const value: Function = null;
 
   // Check for cache hit, eval if missing and return cached function
-  if (functionCache[hash] == null) {
+  if (functionCache[hash]) {
     eval('value = ' + functionString);
     functionCache[hash] = value;
   }
@@ -723,18 +642,90 @@ function isolateEvalWithHash(functionCache, hash, functionString, object) {
   return functionCache[hash].bind(object);
 }
 
-/**
- * Ensure eval is isolated.
- *
- * @ignore
- * @api private
- */
-function isolateEval(functionString) {
+/** Ensures eval is isolated. */
+function isolateEval(functionString: string): Function {
   // Contains the value we are going to set
-  let value = null;
+   const value: Function = null;
   // Eval the function
   eval('value = ' + functionString);
   return value;
 }
 
-module.exports = deserialize;
+/** Deserializes a JavaScript object from a bson buffer. */
+export function deserialize(buf: Uint8Array, options: {
+  // Evaluate functions in the BSON document scoped to the object deserialized?
+  evalFunctions?: boolean,
+  // Cache evaluated functions for reuse?
+  cacheFunctions?: boolean,
+  // Use a crc32 code for caching, otherwise use the string of the function.
+  cacheFunctionsCrc32?: boolean,
+  // Downgrade Long to Number if it's smaller than 53 bits
+  promoteLongs?: boolean,
+  // Deserializing a Binary will return it as a node.js Buffer instance.
+  promoteBuffers?: boolean,
+  // Deserializing will promote BSON values to their closest nodejs types.
+  promoteValues?: boolean,
+  // Allow to specify what fields we wish to return as unserialized raw buf.
+  fieldsAsRaw?: any,
+  // Return BSON regular expressions as BSONRegExp instances.
+  bsonRegExp?: boolean,
+  // Allows the buf to be larger than the parsed BSON object.
+  allowObjectSmallerThanBufferSize?: boolean
+  // Offset from which to start deserialization.
+  index?: number,
+  // Return raw bson buffer instead of parsing it?
+  raw?: boolean
+} = {
+  evalFunctions:false,
+  cacheFunctions: false,
+  cacheFunctionsCrc32: false,
+  promoteLongs: true,
+  promoteBuffers: false,
+  promoteValues: false,
+ fieldsAsRaw: null,
+  bsonRegExp: false,
+  allowObjectSmallerThanBufferSize: false,
+  index: 0,
+  raw: false
+}, isArray: boolean = false): any {
+  if (buf === null) {
+    throw new TypeError("The input buffer must not be null.")
+  }
+  // options = options == null ? {} : options;
+  // const index = options && options.index ? options.index : 0;
+  const offset: number = options.index
+  // Read the document size
+  const size: number =
+    buf[offset] |
+    (buf[offset+ 1] << 8) |
+    (buf[offset + 2] << 16) |
+    (buf[offset + 3] << 24);
+
+  if (size < 5) {
+    throw new TypeError(`bson size must be >= 5, is ${size}.`);
+  }
+
+  if (options.allowObjectSmallerThanBufferSize && buf.length < size) {
+    throw new TypeError(`buf length ${buf.length} must be >= bson size ${size}.`);
+  }
+
+  if (!options.allowObjectSmallerThanBufferSize && buf.length !== size) {
+    throw new TypeError(`buf length ${buf.length} must === bson size ${size}.`);
+  }
+
+  if (size + offset > buf.length) {
+    throw new TypeError(
+      `bson size ${size} + options.index ${offset} must be <= buf length ${buf.byteLength}.`
+    );
+  }
+
+  // Illegal end value
+  if (buf[offset + size - 1] !== 0) {
+    throw new TypeError("One object, sized correctly, with a spot for an EOO, but the EOO isn't 0x00.");
+  }
+
+  // Start deserializtion
+  return deserializeObject(buf, offset, options, isArray);
+}
+
+// module.exports = deserialize;

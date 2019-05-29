@@ -23,9 +23,9 @@ export class Binary {
 
   readonly _bsontype: string = "Binary";
 
-  private readonly sub_type: number;
-  private position: number;
-  private buffer: Uint8Array;
+  readonly subType: number;
+  private _position: number;
+  private _buf: Uint8Array;
 
   /**
    * Create a Binary type
@@ -39,18 +39,18 @@ export class Binary {
    *  - **BSON.BSON_BINARY_SUBTYPE_USER_DEFINED**, BSON user defined type.
    */
   constructor(buf?: Uint8Array | number[] | string, subType?: number) {
-    this.sub_type = subType == null ? Binary.SUBTYPE_DEFAULT : subType;
-    this.position = 0;
+    this.subType = subType == null ? Binary.SUBTYPE_DEFAULT : subType;
+    this._position = 0;
 
     if (buf !== null) {
       if (typeof buf === "string") {
-        this.buffer = encode(buf, "utf8");
+        this._buf = encode(buf, "base64");
       } else {
-        this.buffer = Uint8Array.from(buf);
+        this._buf = Uint8Array.from(buf);
       }
-      this.position = this.buffer.length;
+      this._position = this._buf.length;
     } else {
-      this.buffer = new Uint8Array(Binary.BUFFER_SIZE);
+      this._buf = new Uint8Array(Binary.BUFFER_SIZE);
     }
   }
 
@@ -93,72 +93,72 @@ export class Binary {
       decoded_byte = byte_value[0];
     }
 
-    if (this.buffer.length > this.position) {
-      this.buffer[this.position++] = decoded_byte;
+    if (this._buf.length > this._position) {
+      this._buf[this._position++] = decoded_byte;
     } else {
-      // this.buffer is too small let's extend the buffer
-      let buffer = new Uint8Array(Binary.BUFFER_SIZE + this.buffer.length);
-      buffer.set(this.buffer, 0);
-      this.buffer = buffer;
-      this.buffer[this.position++] = decoded_byte;
+      // this._buf is too small let's extend the buffer
+      let buffer = new Uint8Array(Binary.BUFFER_SIZE + this._buf.length);
+      buffer.set(this._buf, 0);
+      this._buf = buffer;
+      this._buf[this._position++] = decoded_byte;
     }
   }
 
   /** Writes a buffer or string to a binary. */
-  write(buf: Uint8Array | string, offset: number = this.position): void {
-    if (this.buffer.length < offset + buf.length) {
-      // this.buffer is to small let's extend it
-      let buffer = new Uint8Array(Binary.BUFFER_SIZE + this.buffer.length);
-      buffer.set(this.buffer, 0);
-      this.buffer = buffer;
+  write(buf: Uint8Array | string, offset: number = this._position): void {
+    if (this._buf.length < offset + buf.length) {
+      // this._buf is to small let's extend it
+      let buffer = new Uint8Array(Binary.BUFFER_SIZE + this._buf.length);
+      buffer.set(this._buf, 0);
+      this._buf = buffer;
     }
 
     if (typeof buf === "string") {
       buf = encode(buf, "utf8") as Uint8Array;
     }
 
-    this.buffer.set(buf, offset);
-    this.position =
-      offset + buf.length > this.position ? offset + buf.length : this.position;
+    this._buf.set(buf, offset);
+    this._position =
+      offset + buf.length > this._position ? offset + buf.length : this._position;
   }
 
   /** Reads **length** bytes starting at **position**. */
   read(position: number, length?: number): Uint8Array {
-    length = length > 0 && length % 1 === 0 ? length : this.position;
-    return Uint8Array.from(this.buffer.subarray(position, position + length));
+    length = length > 0 && length % 1 === 0 ? length : this._position;
+    return Uint8Array.from(this._buf.subarray(position, position + length));
   }
 
   /** Returns the value of a binary as an Uint8Array or string. */
   value(asRaw: boolean = false): Uint8Array | string {
     if (asRaw) {
-      return Uint8Array.from(this.buffer.subarray(0, this.position));
+      return Uint8Array.from(this._buf.subarray(0, this._position));
     } else {
-      return decode(this.buffer.subarray(0, this.position));
+      return decode(this._buf.subarray(0, this._position));
     }
   }
 
   /** Length of a binary. */
   get length(): number {
-    return this.position;
+    return this._position;
   }
 
   /** String representation of a binary. */
   toString(format: string = "utf8"): string {
-    const buf: Uint8Array = this.buffer.subarray(0, this.position);
+    const buf: Uint8Array = this._buf.subarray(0, this._position);
     return decode(buf, format);
   }
 
   /** JSON fragment representation of a binary. */
   toJSON(): string {
-    return decode(this.buffer.subarray(0, this.position), "base64");
+    return decode(this._buf.subarray(0, this._position), "base64");
   }
 
   /** Extended JSON representation of a binary. */
   toExtendedJSON(): { $binary: { base64: string; subType: string } } {
-    const subType: string = this.sub_type.toString(16);
+    const subType: string = this.subType.toString(16);
     return {
       $binary: {
-        base64: decode(this.buffer, "base64"),
+        base64: decode(this._buf, "base64"),
         subType: subType.length === 1 ? "0" + subType : subType
       }
     };

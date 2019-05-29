@@ -17,7 +17,7 @@
 // const Binary = require('./binary');
 // const constants = require('./constants');
 // const EJSON = require('./extended_json');
-import { deserializeFrom } from "./parser/deserializer.ts"
+import { deserialize } from "./parser/deserializer.ts"
 import { serializeInto } from "./parser/serializer.ts"
 import { calculateSize } from "./parser/calculate_size.ts"
 
@@ -79,7 +79,7 @@ export { EJSON} from "./extended_json.ts"
 // const internalCalculateObjectSize = require('./parser/calculate_size');
 // const ensureBuffer = require('./ensure_buf');
 
-
+export {deserialize} from "./parser/deserializer.ts"
 
 
 
@@ -101,7 +101,7 @@ export function setInternalBufferSize(size: number): void {
 }
 
 /** Serializes a Javascript object. */
-export function serialize(object: any, options: { checkKeys?: boolean, serializeFunctions?:boolean, ignoreUndefined?:boolean, minInternalBufferSize?:number} = {checkKeys:false, serializeFunctions:false,ignoreUndefined:true, minInternalBufferSize:MAXSIZE}): Uint8Array {
+export function serialize(object: { [key:string]: any}, options: { checkKeys?: boolean, serializeFunctions?:boolean, ignoreUndefined?:boolean, minInternalBufferSize?:number} = {checkKeys:false, serializeFunctions:false,ignoreUndefined:true, minInternalBufferSize:MAXSIZE}): Uint8Array {
   // options = options || {};
   // // Unpack the options
   // const checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
@@ -170,7 +170,8 @@ export function serializeWithBufferAndIndex(object: any, out: Uint8Array, option
     0,
     0,
     options.serializeFunctions,
-    options.ignoreUndefined
+    options.ignoreUndefined,
+    null
   );
   // buf.copy(finalBuffer, startIndex, 0, serializationIndex);
 out.subarray(offset).set(buf.subarray(0, serializationIndex))
@@ -179,43 +180,43 @@ out.subarray(offset).set(buf.subarray(0, serializationIndex))
   return offset + serializationIndex - 1;
 }
 
-/** Deserializes data as BSON. */
-export function deserialize(bson: Uint8Array, options: {
-  // Evaluate functions in the BSON document scoped to the object deserialized?
-  evalFunctions?: boolean,
-  // Cache evaluated functions for reuse?
-  cacheFunctions?: boolean,
-  // Use a crc32 code for caching, otherwise use the string of the function.
-  cacheFunctionsCrc32?: boolean,
-  // Downgrade Long to Number if it's smaller than 53 bits
-  promoteLongs?: boolean,
-  // Deserializing a Binary will return it as a node.js Buffer instance.
-  promoteBuffers?: boolean,
-  // Deserializing will promote BSON values to their closest nodejs types.
-  promoteValues?: boolean,
-  // Allow to specify what fields we wish to return as unserialized raw buf.
-  fieldsAsRaw?: any,
-  // Return BSON regular expressions as BSONRegExp instances.
-  bsonRegExp?: boolean,
-  // Allows the buf to be larger than the parsed BSON object.
-  allowObjectSmallerThanBufferSize?: boolean
-} = {
-  evalFunctions:false,
-  cacheFunctions: false,
-  cacheFunctionsCrc32: false,
-  promoteLongs: true,
-  promoteBuffers: false,
-  promoteValues: false,
- fieldsAsRaw: null,
-  bsonRegExp: false,
-  allowObjectSmallerThanBufferSize: false
-}): any {
-  // buf = ensureBuffer(buf);
-  if (bson === null) {
-    throw new TypeError("The input buffer must not be null.")
-  }
-  return deserializeFrom(bson, options);
-}
+// /** Deserializes data as BSON. */
+// export function deserialize(bson: Uint8Array, options: {
+//   // Evaluate functions in the BSON document scoped to the object deserialized?
+//   evalFunctions?: boolean,
+//   // Cache evaluated functions for reuse?
+//   cacheFunctions?: boolean,
+//   // Use a crc32 code for caching, otherwise use the string of the function.
+//   cacheFunctionsCrc32?: boolean,
+//   // Downgrade Long to Number if it's smaller than 53 bits
+//   promoteLongs?: boolean,
+//   // Deserializing a Binary will return it as a node.js Buffer instance.
+//   promoteBuffers?: boolean,
+//   // Deserializing will promote BSON values to their closest nodejs types.
+//   promoteValues?: boolean,
+//   // Allow to specify what fields we wish to return as unserialized raw buf.
+//   fieldsAsRaw?: any,
+//   // Return BSON regular expressions as BSONRegExp instances.
+//   bsonRegExp?: boolean,
+//   // Allows the buf to be larger than the parsed BSON object.
+//   allowObjectSmallerThanBufferSize?: boolean
+// } = {
+//   evalFunctions:false,
+//   cacheFunctions: false,
+//   cacheFunctionsCrc32: false,
+//   promoteLongs: true,
+//   promoteBuffers: false,
+//   promoteValues: false,
+//  fieldsAsRaw: null,
+//   bsonRegExp: false,
+//   allowObjectSmallerThanBufferSize: false
+// }): any {
+//   // buf = ensureBuffer(buf);
+//   if (bson === null) {
+//     throw new TypeError("The input buffer must not be null.")
+//   }
+//   return deserialize(bson, options);
+// }
 
 /**
  * Calculate the bson size for a passed in Javascript object.
@@ -300,7 +301,7 @@ export function deserializeStream(bson, startIndex, numberOfDocuments, documents
     // Update options with index
     // options.index = offset;
     // Parse the document at this point
-    documents[docStartIndex + i] = deserializeFrom(bson, /*options*/ {...options, index: offset});
+    documents[docStartIndex + i] = deserialize(bson, /*options*/ {...options, index: offset});
     // Adjust index by the document size
     offset += size;
   }

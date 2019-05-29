@@ -28,10 +28,10 @@ export class Double {
       : new Double(parseFloat(doc.$numberDouble));
   }
 
-  /** Access the number value. */
-  valueOf(): number {
-    return this.value;
-  }
+  // /** Access the number value. */
+  // valueOf(): number {
+  //   return this.value;
+  // }
 
   /** JSON fragment representation of a double. */
   toJSON(): number {

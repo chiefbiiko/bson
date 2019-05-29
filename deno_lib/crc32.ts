@@ -1,3 +1,5 @@
+import { encode } from "./transcoding.ts"
+
 // prettier-ignore
 const TABLE: Uint32Array = Uint32Array.from([
   0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
@@ -66,9 +68,12 @@ const TABLE: Uint32Array = Uint32Array.from([
   0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 ]);
 
-export function crc32(buf: Uint8Array, previous: number): number {
+export function crc32(buf: string | Uint8Array, previous: number = 0): number {
   if (buf === null) {
     throw new TypeError("Input buffer must not be null.")
+  }
+  if (typeof buf === "string") {
+    buf = encode(buf, "utf8")
   }
   let crc: number = previous === 0 ? 0 : ~~previous ^ -1;
   for (const byte of buf.values()) {

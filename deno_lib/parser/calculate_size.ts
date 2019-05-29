@@ -1,5 +1,5 @@
 import { Binary } from "./../binary.ts";
-import { normalizedFunctionString, utf8ByteLength } from "./utils.ts";
+import { normalizeFunctionString, utf8ByteLength } from "./utils.ts";
 import {
   BSON_INT32_MIN,
   BSON_INT32_MAX,
@@ -119,7 +119,7 @@ function calculateElement(
             4 +
             utf8ByteLength(value.code.toString()) +
             1 +
-            calculateObjectSize(
+            calculateSize(
               value.scope,
               serializeFunctions,
               ignoreUndefined
@@ -173,7 +173,7 @@ function calculateElement(
         return (
           (name !== null ? utf8ByteLength(name) + 1 : 0) +
           1 +
-          calculateObjectSize(
+          calculateSize(
             ordered_values,
             serializeFunctions,
             ignoreUndefined
@@ -202,7 +202,7 @@ function calculateElement(
       } else {
         return (
           (name !== null ? utf8ByteLength(name) + 1 : 0) +
-          calculateObjectSize(value, serializeFunctions, ignoreUndefined) +
+          calculateSize(value, serializeFunctions, ignoreUndefined) +
           1
         );
       }
@@ -217,16 +217,16 @@ function calculateElement(
           1 +
           4 +
           4 +
-          utf8ByteLength(normalizedFunctionString(value)) +
+          utf8ByteLength(normalizeFunctionString(value)) +
           1 +
-          calculateObjectSize(value.scope, serializeFunctions, ignoreUndefined)
+          calculateSize(value.scope, serializeFunctions, ignoreUndefined)
         );
       } else if (serializeFunctions) {
         return (
           (name !== null ? utf8ByteLength(name) + 1 : 0) +
           1 +
           4 +
-          utf8ByteLength(normalizedFunctionString(value)) +
+          utf8ByteLength(normalizeFunctionString(value)) +
           1
         );
       }

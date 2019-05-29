@@ -105,6 +105,7 @@ function deserializeValue(/*self:any, key: string, */value: any, options: {relax
     // const dollarKeys: string[] = Object.keys(v).filter(k => k.startsWith('$'))
     if (v instanceof Object) {
       const valid: boolean = Object.keys(v)
+      .filter(k => k.startsWith('$'))
         .reduce((acc, k): number => k === "$ref" || k === "$id" || k === "$db" ? ++acc : --acc, 0) === 3;
     // let valid: boolean = true;
     // dollarKeys.forEach((k: string): void => {

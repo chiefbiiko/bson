@@ -4,7 +4,7 @@ import {
 } from "https://deno.land/std/prettier/prettier.ts";
 
 /** Normalizes given function's string representation via prettier. */
-export function normalizedFunctionString(fn: Function | string): string {
+export function normalizeFunctionString(fn: Function | string): string {
   return prettier.format(String(fn), {
     parser: "babel",
     plugins: prettierPlugins

@@ -7,27 +7,28 @@
 // const Binary = require('../binary');
 // const CONSTANTS = require('../CONSTANTS');
 // const normalizeFunctionString = require('./utils').normalizeFunctionString;
-import { Long } from "./long/mod.ts"
-import { Double } from "./double.ts"
+import { Long } from "./../long/mod.ts"
+import { Double } from "./../double.ts"
 // import { Timestamp } from "./timestamp.ts"
-import {ObjectId } from "./object_id.ts"
-import {BSONRegExp} from "./regexp.ts"
-import {BSONSymbol} from "./symbol.ts"
+import {ObjectId } from "./../object_id.ts"
+import {BSONRegExp} from "./../regexp.ts"
+import {BSONSymbol} from "./../symbol.ts"
 // import {Int32} from "./int32.ts"
-import {Code} from "./code.ts"
-import {Decimal128} from "./decimal128.ts"
-import {MinKey} from "./min_key.ts"
-import {MaxKey} from "./max_key.ts"
-import { DBRef} from "./db_ref.ts"
-import {Binary} from "./binary.ts"
+import {Code} from "./../code.ts"
+import {Decimal128} from "./../decimal128.ts"
+import {MinKey} from "./../min_key.ts"
+import {MaxKey} from "./../max_key.ts"
+import { DBRef} from "./../db_ref.ts"
+import {Binary} from "./../binary.ts"
 // TODO: Get rid of below import with DataView
-import { writeIEEE754 } from "./../float_parser.ts";
+// import { writeIEEE754 } from "./../float_parser.ts";
 // import { Long } from "./../long/mod.ts";
 // import { Binary} from "./../binary.ts";
 import { normalizeFunctionString } from "./utils.ts"
-import * as CONSTANTS from "./../CONSTANTS.ts"
+import * as CONSTANTS from "./../constants.ts"
 
-const encoder: TextEncoder = new TextEncoder();
+// const encoder: TextEncoder = new TextEncoder();
+import { encode } from "./../transcoding.ts"
 
 const null_regex: RegExp = /\x00/;
 const ignoreKeys: Set<string> = new Set(['$db', '$ref', '$id', '$clusterTime']);
@@ -38,21 +39,33 @@ function serializeString(buf: Uint8Array, key: string, value: string, index: num
   // const numberOfWrittenBytes = !isArray
   //   ? buf.write(key, index, 'utf8')
   //   : buf.write(key, index, 'ascii');
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
   buf.set(encodedKey, index);
   // Encode the name
   index = index + encodedKey.byteLength + 1;
   buf[index - 1] = 0;
-  // Write the string
-  const encodedValue: Uint8Array = encoder.encode(value);
-  buf.set(encodedValue, index);
+  // // Write the string
+  const encodedValue: Uint8Array = encode(value, "utf8");
+/////////////////
+// console.error("encodedValue", encodedValue)
+//////////////////
+  // buf.set(encodedValue, index);
+  // index += encodedValue.byteLength
+//////////////////
+// console.error("encodedValue.byteLength", encodedValue.byteLength)
+// console.error("buf.subarray(index, encodedValue.byteLength)", buf.subarray(index, index +encodedValue.byteLength))
+//////////////////
   // Write the size of the string to buf
   buf[index + 3] = ((encodedValue.byteLength + 1) >> 24) & 0xff;
   buf[index + 2] = ((encodedValue.byteLength + 1) >> 16) & 0xff;
   buf[index + 1] = ((encodedValue.byteLength + 1) >> 8) & 0xff;
   buf[index] = (encodedValue.byteLength + 1) & 0xff;
+  index += 4
+  // Write the string
+  buf.set(encodedValue, index);
+  // index += encodedValue.byteLength
   // Update index
-  index = index + 4 + encodedValue.byteLength;
+  index = index /*+ 4*/ + encodedValue.byteLength;
   buf[index++] = 0;
   return index;
 }
@@ -74,7 +87,7 @@ function serializeNumber(buf: Uint8Array, key: string, value: number, index: num
       //   : buf.write(key, index, 'ascii');
         // index = index + numberOfWrittenBytes;
             // Encode the name
-      const encodedKey: Uint8Array = encoder.encode(key);
+      const encodedKey: Uint8Array = encode(key, "utf8");
       buf.set(encodedKey, index);
       index +=  encodedKey.byteLength;
       buf[index++] = 0;
@@ -91,12 +104,13 @@ function serializeNumber(buf: Uint8Array, key: string, value: number, index: num
       //   : buf.write(key, index, 'ascii');
         // index = index + numberOfWrittenBytes;
             // Encode the name
-      const encodedKey: Uint8Array = encoder.encode(key);
+      const encodedKey: Uint8Array = encode(key, "utf8");
       buf.set(encodedKey, index);
       index +=  encodedKey.byteLength;
       buf[index++] = 0;
       // Write float
-      writeIEEE754(buf, value, index, 'little', 52, 8);
+      // writeIEEE754(buf, value, index, 'little', 52, 8);
+      new DataView(buf.buffer).setFloat64(index, value, true);
       // Ajust index
       index = index + 8;
     } else {
@@ -107,7 +121,7 @@ function serializeNumber(buf: Uint8Array, key: string, value: number, index: num
       //   : buf.write(key, index, 'ascii');
         // index = index + numberOfWrittenBytes;
             // Encode the name
-      const encodedKey: Uint8Array = encoder.encode(key);
+      const encodedKey: Uint8Array = encode(key, "utf8");
       buf.set(encodedKey, index);
       index+=  encodedKey.byteLength;
       buf[index++] = 0;
@@ -133,12 +147,13 @@ buf[index++] = (highBits >> 24) & 0xff;
     //   : buf.write(key, index, 'ascii');
     // index = index + numberOfWrittenBytes;
         // Encode the name
-    const encodedKey: Uint8Array = encoder.encode(key);
+    const encodedKey: Uint8Array = encode(key, "utf8");
     buf.set(encodedKey, index);
     index +=  encodedKey.byteLength;
     buf[index++] = 0;
     // Write float
-    writeIEEE754(buf, value, index, 'little', 52, 8);
+    // writeIEEE754(buf, value, index, 'little', 52, 8);
+    new DataView(buf.buffer).setFloat64(index, value, true);
     // Ajust index
     index = index + 8;
   }
@@ -154,7 +169,7 @@ function serializeNull(buf: Uint8Array, key: string, value: null, index: number/
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
   buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -169,7 +184,7 @@ function serializeBoolean(buf: Uint8Array, key: string, value: boolean, index: n
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
   buf.set(encodedKey, index);
   index +=  encodedKey.byteLength;
   buf[index++] = 0;
@@ -186,7 +201,7 @@ function serializeDate(buf: Uint8Array, key: string, value: Date, index: number/
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-    const encodedKey: Uint8Array = encoder.encode(key);
+    const encodedKey: Uint8Array = encode(key, "utf8");
   buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -215,7 +230,7 @@ function serializeRegExp(buf: Uint8Array, key: string, value: RegExp, index: num
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
     // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -223,7 +238,7 @@ buf.set(encodedKey, index);
     throw Error('value ' + value.source + ' must not contain null bytes');
   }
   // Encode the value
-  const encodedValue: Uint8Array = encoder.encode(value.source);
+  const encodedValue: Uint8Array = encode(value.source, "utf8");
 buf.set(encodedValue, index);
   index += encodedValue.byteLength;
   buf[index++] = 0x00;
@@ -250,7 +265,7 @@ function serializeBSONRegExp(buf: Uint8Array, key: string, value: BSONRegExp, in
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -258,15 +273,15 @@ buf.set(encodedKey, index);
     throw Error('value ' + value.pattern + ' must not contain null bytes');
   }
   // Encode the value
-  const encodedValue: Uint8Array = encoder.encode(value.pattern);
+  const encodedValue: Uint8Array = encode(value.pattern, "utf8");
 buf.set(encodedValue, index);
   index += encodedValue.byteLength;
   buf[index++] = 0x00;
   // Write the options
-  const encodedOptions: Uint8Array = encoder.encode(value.options
+  const encodedOptions: Uint8Array = encode(value.options
     .split('')
     .sort()
-    .join(''))
+    .join(''), "utf8")
   buf.set(encodedOptions, index)
   index += encodedOptions.byteLength
   // Add ending zero
@@ -288,7 +303,7 @@ function serializeMinMax(buf: Uint8Array, key: string, value: MinKey | MaxKey, i
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -303,14 +318,14 @@ function serializeObjectId(buf: Uint8Array, key: string, value: ObjectId, index:
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
     // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Write the objectId into the shared buf
   if (typeof value.id === 'string') {
     // buf.write(value.id, index, 'binary');
-    const encodedId: Uint8Array = encoder.encode(value.id);
+    const encodedId: Uint8Array = encode(value.id);
     if (encodedId.byteLength !== 12) {
 throw new TypeError('object [' + JSON.stringify(value) + '] is not a valid ObjectId');
     }
@@ -332,7 +347,7 @@ function serializeBuffer(buf: Uint8Array, key: string, value: Uint8Array, index:
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -378,7 +393,7 @@ function serializeObject(
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -405,7 +420,7 @@ function serializeDecimal128(buf: Uint8Array, key: string, value: Decimal128, in
   //   : buf.write(key, index, 'ascii');
     // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -423,7 +438,7 @@ function serializeLong(buf: Uint8Array, key: string, value: Long, index: number/
   //   : buf.write(key, index, 'ascii');
  //   index = index + numberOfWrittenBytes;
     // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -451,7 +466,7 @@ function serializeInt32(buf: Uint8Array, key: string, value: number, index: numb
   //   : buf.write(key, index, 'ascii');
   //   index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -471,12 +486,13 @@ function serializeDouble(buf: Uint8Array, key: string, value: Double, index: num
     // : buf.write(key, index, 'ascii');
     //  index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Write float
-  writeIEEE754(buf, value.value, index, 'little', 52, 8);
+  // writeIEEE754(buf, value.value, index, 'little', 52, 8);
+  new DataView(buf.buffer).setFloat64(index, value.value, true);
   // Adjust index
   index = index + 8;
   return index;
@@ -490,12 +506,12 @@ function serializeFunction(buf: Uint8Array, key: string, value: Function, index:
   //   : buf.write(key, index, 'ascii');
   //   index = index + numberOfWrittenBytes;
     // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Function string
-  const encodedFunction: Uint8Array = encoder.encode(normalizeFunctionString(value));
+  const encodedFunction: Uint8Array = encode(normalizeFunctionString(value), "utf8");
   // Write the string
   buf.set(encodedFunction, index + 4)
   // const size = buf.write(functionString, index + 4, 'utf8') + 1;
@@ -533,7 +549,7 @@ function serializeCode(
 
 
     // Encode the name
-    const encodedKey: Uint8Array = encoder.encode(key);
+    const encodedKey: Uint8Array = encode(key, "utf8");
     buf.set(encodedKey, index);
     index += encodedKey.byteLength;
     buf[index++] = 0;
@@ -544,7 +560,7 @@ function serializeCode(
     // Serialize the function
     // Get the function string
     // const functionString: string = typeof value.code === 'string' ? value.code : value.code.toString();
-    const encodedFunction: Uint8Array = encoder.encode(normalizeFunctionString(value.code))
+    const encodedFunction: Uint8Array = encode(normalizeFunctionString(value.code), "utf8")
     // Index adjustment
     index += 4;
     // Write string into buf
@@ -592,7 +608,7 @@ function serializeCode(
     //   : buf.write(key, index, 'ascii');
     // index = index + numberOfWrittenBytes;
     // Encode the name
-    const encodedKey: Uint8Array = encoder.encode(key);
+    const encodedKey: Uint8Array = encode(key, "utf8");
     buf.set(encodedKey, index);
     index += encodedKey.byteLength;
     buf[index++] = 0;
@@ -600,7 +616,7 @@ function serializeCode(
     // const functionString = value.code.toString();
     // // Write the string
     // const size = buf.write(functionString, index + 4, 'utf8') + 1;
-    const encodedFunction: Uint8Array = encoder.encode(normalizeFunctionString(value.code))
+    const encodedFunction: Uint8Array = encode(normalizeFunctionString(value.code), "utf8")
     // Index adjustment
     index += 4;
     // Write string into buf
@@ -629,16 +645,16 @@ function serializeBinary(buf: Uint8Array, key: string, value: Binary, index: num
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
   // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
   buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Extract the buf
-  const data: Uint8Array = value.value(true);
+  const data: Uint8Array = value.value(true) as Uint8Array;
   // Calculate size
-  let size: number = value.position;
+  let size: number = value.length;
   // Add the deprecated 02 type 4 bytes of size to total
-  if (value.sub_type === Binary.SUBTYPE_BYTE_ARRAY) {
+  if (value.subType === Binary.SUBTYPE_BYTE_ARRAY) {
     size += 4;
   }
   // Write the size of the string to buf
@@ -647,11 +663,11 @@ function serializeBinary(buf: Uint8Array, key: string, value: Binary, index: num
   buf[index++] = (size >> 16) & 0xff;
   buf[index++] = (size >> 24) & 0xff;
   // Write the subtype to the buf
-  buf[index++] = value.sub_type;
+  buf[index++] = value.subType;
 
   // If we have binary type 2 the 4 first bytes are the size
-  if (value.sub_type === Binary.SUBTYPE_BYTE_ARRAY) {
-    size = size - 4;
+  if (value.subType === Binary.SUBTYPE_BYTE_ARRAY) {
+    size -= 4;
     buf[index++] = size & 0xff;
     buf[index++] = (size >> 8) & 0xff;
     buf[index++] = (size >> 16) & 0xff;
@@ -661,7 +677,7 @@ function serializeBinary(buf: Uint8Array, key: string, value: Binary, index: num
   // Write the data to the object
   buf.set(data, index);
   // Adjust the index
-  index += value.position;
+  index += value.length;
   return index;
 }
 
@@ -674,13 +690,13 @@ function serializeSymbol(buf: Uint8Array, key: string, value: BSONSymbol, index:
   //   : buf.write(key, index, 'ascii');
   // index = index + numberOfWrittenBytes;
     // Encode the name
-  const encodedKey: Uint8Array = encoder.encode(key);
+  const encodedKey: Uint8Array = encode(key, "utf8");
   buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Write the string
   // const size = buf.write(value.value, index + 4, 'utf8') + 1;
-  const encodedSymbol: Uint8Array = encoder.encode(value.value);
+  const encodedSymbol: Uint8Array = encode(value.value, "utf8");
   buf.set(encodedSymbol, index + 4)
   const size: number = encodedSymbol.byteLength + 1
   // Write the size of the string to buf
@@ -703,7 +719,7 @@ function serializeDBRef(buf: Uint8Array, key: string, value: DBRef, index: numbe
   //   : buf.write(key, index, 'ascii');
   //  index = index + numberOfWrittenBytes;
   // Encode the name
-const encodedKey: Uint8Array = encoder.encode(key);
+const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
 index += encodedKey.byteLength;
   buf[index++] = 0;
@@ -714,11 +730,11 @@ index += encodedKey.byteLength;
     $id: value.oid
   };
 
-  if (value.db != null) {
+  if (value.db) {
     output.$db = value.db;
   }
 
-  output = Object.assign(output, value.fields);
+  /*output = */Object.assign(output, value.fields);
   const endIndex: number = serializeInto(buf, output, false, index, depth + 1, serializeFunctions, false, null);
 
   // Calculate object size
@@ -964,20 +980,25 @@ export function serializeInto(
       // Check the type of the value
       const type = typeof value;
   const bsontype:string = value._bsontype;
+
+  ////////////////////
+  console.error("key", key, "value", value, "type", type, "bsontype", bsontype)
+  ////////////////////
+
       // Check the key and throw error if it's illegal
       if (typeof key === 'string' && !ignoreKeys.has(key)) {
         // if (key.match(null_regex) != null) {
         if (null_regex.test(key))  {
           // The BSON spec doesn't allow keys with null bytes because keys are
           // null-terminated.
-          throw new Error(`Key ${key}  must not contain null bytes.`);
+          throw new TypeError(`Key ${key}  must not contain null bytes.`);
         }
 
         if (checkKeys) {
           if ('$' === key[0]) {
-            throw new Error(`Key ${key} must not start with '$'.`);
+            throw new TypeError(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
-            throw new Error(`Key ${key} must not contain '.'.`);
+            throw new TypeError(`Key ${key} must not contain '.'.`);
           }
         }
       }
@@ -1055,7 +1076,7 @@ export function serializeInto(
   path.pop();
 
   // Final padding byte for object
-  buf[index++] = 0x00;
+  buf[index++] = 0;
 
   // Final size
   const size: number = index - startingIndex;

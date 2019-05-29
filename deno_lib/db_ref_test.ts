@@ -1,6 +1,7 @@
 // const BSON = require('../../lib/bson');
 import { test, runIfMain } from "https://deno.land/x/testing/mod.ts";
 import { assertEquals } from "https://deno.land/x/testing/asserts.ts";
+import * as BSON from "./bson.ts"
 
 // 0x0C foo\0 \0\0\07 String.fromCharCode(0x41, 0x42, 0xfffd, 0x43, 0x44) 12
 const bsonSnippet: Uint8Array = Uint8Array.from([
@@ -46,13 +47,13 @@ const bsonSnippet: Uint8Array = Uint8Array.from([
   0
 ]);
 
-// test({
-//   name: "can serialize and deserialize 0xFFFD in dbpointer name",
-//   fn(): void {
-//     const doc: { [key: string]: any } = BSON.deserialize(bsonSnippet);
-//     const buf: Uint8Array = BSON.serialize(doc);
-//     assertEquals(buf, bsonSnippet);
-//   }
-// });
+test({
+  name: "can serialize and deserialize 0xFFFD in dbpointer name",
+  fn(): void {
+    const doc: { [key: string]: any } = BSON.deserialize(bsonSnippet);
+    const buf: Uint8Array = BSON.serialize(doc);
+    assertEquals(buf, bsonSnippet);
+  }
+});
 
 runIfMain(import.meta);
