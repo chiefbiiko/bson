@@ -66,7 +66,7 @@ const TABLE: Uint32Array = Uint32Array.from([
   0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 ]);
 
-export function crc32(buf: Uint8Array, previous: number) {
+export function crc32(buf: Uint8Array, previous: number): number {
   if (buf === null) {
     throw new TypeError("Input buffer must not be null.")
   }

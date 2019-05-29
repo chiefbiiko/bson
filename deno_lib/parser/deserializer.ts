@@ -31,6 +31,7 @@ import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
 import * as CONSTANTS from "./CONSTANTS.ts"
 import { validateUtf8} from "./validate_utf8.ts"
+import { crc32 } from "./crc32.ts";
 import  {decode} from "./transcoding.ts"
 
 // Internal long versions
@@ -153,8 +154,8 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
   // const cacheFunctionsCrc32 =
   //   options['cacheFunctionsCrc32'] == null ? false : options['cacheFunctionsCrc32'];
 
-  let crc32: any
-  if (!options.cacheFunctionsCrc32) {crc32 = null;}
+  // let crc32: any
+  // if (!options.cacheFunctionsCrc32) {crc32 = null;}
 
   // const fieldsAsRaw = options['fieldsAsRaw'] == null ? null : options['fieldsAsRaw'];
   //
@@ -423,7 +424,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
 
       // Update the index
       index += binarySize;
-    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && options.bsonRegExp === false) {
+    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && !options.bsonRegExp) {
       // Get the start search index
       i = index;
       // Locate the end of the c string
@@ -469,7 +470,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       }
 
       object[name] = new RegExp(source, optionsArray.join(''));
-    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && bsonRegExp === true) {
+    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && options.bsonRegExp) {
       // Get the start search index
       i = index;
       // Locate the end of the c string
