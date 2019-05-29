@@ -10,7 +10,7 @@ const encoder: TextEncoder = new TextEncoder();
 function toHexString(buf: Uint8Array): string {
   return buf.reduce(
     (hex: string, byte: number): string =>
-      hex + (byte < 16 ? "0" + byte.toString(16) : byte.toString(16)),
+      `${hex}${byte < 16 ? "0" : ""}${byte.toString(16)}`,
     ""
   );
 }
@@ -19,7 +19,7 @@ function toHexString(buf: Uint8Array): string {
 function fromHexString(hex: string): Uint8Array {
   const len: number = hex.length;
   if (len % 2 || !/^[0-9a-fA-F]+$/.test(hex)) {
-    throw new TypeError("Invalid hex string");
+    throw new TypeError("Invalid hex string.");
   }
   hex = hex.toLowerCase();
   const buf: Uint8Array = new Uint8Array(Math.floor(len / 2));
@@ -39,7 +39,7 @@ export function decode(buf: Uint8Array, encoding: string = "utf8"): string {
   } else if (/^hex(?:adecimal)?$/i.test(encoding)) {
     return toHexString(buf);
   } else {
-    throw new TypeError("Unsupported string encoding");
+    throw new TypeError("Unsupported string encoding.");
   }
 }
 
@@ -51,6 +51,6 @@ export function encode(str: string, encoding: string = "utf8"): Uint8Array {
   } else if (/^hex(?:adecimal)?$/i.test(encoding)) {
     return fromHexString(str);
   } else {
-    throw new TypeError("Unsupported string encoding");
+    throw new TypeError("Unsupported string encoding.");
   }
 }

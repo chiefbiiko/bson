@@ -251,10 +251,12 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
         (buf[index++] << 16) |
         (buf[index++] << 24);
     } else if (elementType === CONSTANTS.BSON_DATA_NUMBER && !options.promoteValues) {
-      object[name] = new Double(buf.readDoubleLE(index));
+      // object[name] = new Double(buf.readDoubleLE(index));
+      object[name] = new Double(new DataView(buf.buffer).getFloat64(index, true));
       index += 8;
     } else if (elementType === CONSTANTS.BSON_DATA_NUMBER) {
-      object[name] = buf.readDoubleLE(index);
+      // object[name] = buf.readDoubleLE(index);
+      object[name] = new DataView(buf.buffer).getFloat64(index, true);
       index += 8;
     } else if (elementType === CONSTANTS.BSON_DATA_DATE) {
       const lowBits: number =
@@ -573,54 +575,54 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       }
 
       // Get the code string size
-      const stringSize: number =
+      const strSize: number =
         buf[index++] |
         (buf[index++] << 8) |
         (buf[index++] << 16) |
         (buf[index++] << 24);
       // Check if we have a valid string
       if (
-        stringSize <= 0 ||
-        stringSize > buf.length - index ||
-        buf[index + stringSize - 1] !== 0
+        strSize <= 0 ||
+        strSize > buf.length - index ||
+        buf[index + strSize - 1] !== 0
       )
         {throw new TypeError('Bad string length in bson.');}
 
       // Javascript function
-      const functionString:string = decode(buf.subarray(index, index + stringSize - 1), "utf8")//buf.toString('utf8', index, index + stringSize - 1);
+      const functionString:string = decode(buf.subarray(index, index + strSize - 1), "utf8")//buf.toString('utf8', index, index + stringSize - 1);
       // Update parse index position
-      index += stringSize;
+      index += strSize;
       // Parse the element
       const _index: number = index;
 
 //////////////////////////////////////////////////////////
 
       // Decode the size of the object document
-      const objectSize =
+      const objectSize: number =
         buf[index] |
         (buf[index + 1] << 8) |
         (buf[index + 2] << 16) |
         (buf[index + 3] << 24);
       // Decode the scope object
-      const scopeObject = deserializeObject(buf, _index, options, false);
+      const scopeObject: any = deserializeObject(buf, _index, options, false);
       // Adjust the index
-      index = index + objectSize;
+      index += objectSize;
 
       // Check if field length is to short
-      if (totalSize < 4 + 4 + objectSize + stringSize) {
-        throw new Error('code_w_scope total size is to short, truncating scope');
+      if (totalSize < 4 + 4 + objectSize + strSize) {
+        throw new TypeError('code_w_scope total size is too short, truncating scope.');
       }
 
       // Check if totalSize field is to long
-      if (totalSize > 4 + 4 + objectSize + stringSize) {
-        throw new Error('code_w_scope total size is to long, clips outer document');
+      if (totalSize > 4 + 4 + objectSize + strSize) {
+        throw new Error('code_w_scope total size is too long, clips outer document.');
       }
 
       // If we are evaluating the functions
-      if (evalFunctions) {
+      if (options.evalFunctions) {
         // If we have cache enabled let's look for the md5 of the function in the cache
-        if (cacheFunctions) {
-          const hash = cacheFunctionsCrc32 ? crc32(functionString) : functionString;
+        if (options.cacheFunctions) {
+          const hash: number = options.cacheFunctionsCrc32 ? crc32(functionString) : functionString;
           // Got to do this to avoid V8 deoptimizing the call due to finding eval
           object[name] = isolateEvalWithHash(functionCache, hash, functionString, object);
         } else {
@@ -633,25 +635,25 @@ function deserializeObject(buf: Uint8Array, index: number, options: {
       }
     } else if (elementType === CONSTANTS.BSON_DATA_DBPOINTER) {
       // Get the code string size
-      const stringSize =
+      const strSize: number =
         buf[index++] |
         (buf[index++] << 8) |
         (buf[index++] << 16) |
         (buf[index++] << 24);
       // Check if we have a valid string
       if (
-        stringSize <= 0 ||
-        stringSize > buf.length - index ||
-        buf[index + stringSize - 1] !== 0
+        strSize <= 0 ||
+        strSize > buf.length - index ||
+        buf[index + strSize - 1] !== 0
       )
-        throw new Error('bad string length in bson');
+      {  throw new TypeError('Bad string length in bson.');}
       // Namespace
-      if (!validateUtf8(buf, index, index + stringSize - 1)) {
-        throw new Error('Invalid UTF-8 string in BSON document');
+      if (!validateUtf8(buf, index, index + strSize - 1)) {
+        throw new TypeError('Invalid UTF-8 string in BSON document.');
       }
-      const namespace = buf.toString('utf8', index, index + stringSize - 1);
+      const namespace = buf.toString('utf8', index, index + strSize - 1);
       // Update parse index position
-      index = index + stringSize;
+      index = index + strSize;
 
       // Read the oid
       const oidBuffer = Buffer.alloc(12);

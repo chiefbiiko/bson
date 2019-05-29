@@ -20,6 +20,7 @@ import {MinKey} from "./min_key.ts"
 import {MaxKey} from "./max_key.ts"
 import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
+// TODO: Get rid of below import with DataView
 import { writeIEEE754 } from "./../float_parser.ts";
 // import { Long } from "./../long/mod.ts";
 // import { Binary} from "./../binary.ts";
