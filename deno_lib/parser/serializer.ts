@@ -46,15 +46,10 @@ function serializeString(buf: Uint8Array, key: string, value: string, index: num
   buf[index - 1] = 0;
   // // Write the string
   const encodedValue: Uint8Array = encode(value, "utf8");
-/////////////////
-// console.error("encodedValue", encodedValue)
-//////////////////
+
   // buf.set(encodedValue, index);
   // index += encodedValue.byteLength
-//////////////////
-// console.error("encodedValue.byteLength", encodedValue.byteLength)
-// console.error("buf.subarray(index, encodedValue.byteLength)", buf.subarray(index, index +encodedValue.byteLength))
-//////////////////
+
   // Write the size of the string to buf
   buf[index + 3] = ((encodedValue.byteLength + 1) >> 24) & 0xff;
   buf[index + 2] = ((encodedValue.byteLength + 1) >> 16) & 0xff;
@@ -711,6 +706,7 @@ function serializeSymbol(buf: Uint8Array, key: string, value: BSONSymbol, index:
 }
 
 function serializeDBRef(buf: Uint8Array, key: string, value: DBRef, index: number, depth: number, serializeFunctions: boolean/*, isArray: boolean*/): number {
+  // let initialIndex: number = index;
   // Write the type
   buf[index++] = CONSTANTS.BSON_DATA_OBJECT;
   // Number of written bytes
@@ -718,25 +714,47 @@ function serializeDBRef(buf: Uint8Array, key: string, value: DBRef, index: numbe
   //   ? buf.write(key, index, 'utf8')
   //   : buf.write(key, index, 'ascii');
   //  index = index + numberOfWrittenBytes;
-  // Encode the name
+  // Encode the key
 const encodedKey: Uint8Array = encode(key, "utf8");
 buf.set(encodedKey, index);
 index += encodedKey.byteLength;
   buf[index++] = 0;
+
+  // // Write the ref
+  // const encodedRef: Uint8Array = encode(value.collection, "utf8")
+  // buf.set(encodedRef, index);
+  // index += encodedRef.byteLength;
+  // buf[index++] = 0
+  // 
+  // // Write the oid
+  // buf.set(value.oid.id, index)
+  // index += value.oid.id.byteLength;
+  // buf[index++] = 0
+  // 
+  // // TODO: if value.db encode it, if value.fields encode it
+  // 
+  // // Write the size
+  // const size: number = index - initialIndex;
+  // buf[initialIndex++] = size & 0xff;
+  // buf[initialIndex++] = (size >> 8) & 0xff;
+  // buf[initialIndex++] = (size >> 16) & 0xff;
+  // buf[initialIndex++] = (size >> 24) & 0xff;
+  // // Set index
+  // return index;
 
   let startIndex: number = index;
   let output: { [key: string]: any} = {
     $ref: value.collection || value.namespace, // "namespace" was what library 1.x called "collection"
     $id: value.oid
   };
-
+  
   if (value.db) {
     output.$db = value.db;
   }
-
+  
   /*output = */Object.assign(output, value.fields);
   const endIndex: number = serializeInto(buf, output, false, index, depth + 1, serializeFunctions, false, null);
-
+  
   // Calculate object size
   const size = endIndex - startIndex;
   // Write the size
@@ -980,10 +998,6 @@ export function serializeInto(
       // Check the type of the value
       const type = typeof value;
   const bsontype:string = value === null || value === undefined ? null : value._bsontype;
-
-  ////////////////////
-  console.error("key", key, "value", value, "type", type, "bsontype", bsontype)
-  ////////////////////
 
       // Check the key and throw error if it's illegal
       if (typeof key === 'string' && !ignoreKeys.has(key)) {

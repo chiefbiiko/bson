@@ -28,16 +28,6 @@ export class Int32 {
       : new Int32(doc.$numberInt);
   }
 
-  /**  Access the number value.*/
-  valueOf(): number {
-    return this.value;
-  }
-
-  /** JSON representation of an int32. */
-  toJSON(): number {
-    return this.value;
-  }
-
   /** Extended JSON representation of an int32. */
   toExtendedJSON(options?: {
     relaxed?: boolean;
@@ -45,5 +35,10 @@ export class Int32 {
     return options && options.relaxed
       ? this.value
       : { $numberInt: this.value.toString() };
+  }
+  
+  /** JSON representation of an int32. */
+  toJSON(): { $numberInt: string } {
+    return { $numberInt: this.value.toString() }
   }
 }

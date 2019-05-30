@@ -179,7 +179,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
       if (options.raw) {
         object[name] = buf.slice(index, index + objectSize);
       } else {
-        object[name] = deserializeObject(buf, _index, options, false);
+        object[name] = deserializeObject(buf, _index, options, false);  
       }
 
       index += objectSize;

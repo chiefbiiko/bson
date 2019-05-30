@@ -1,3 +1,4 @@
+import {Int32} from "./int32.ts"
 import { encode, decode } from "./transcoding.ts";
 
 /**  A class representation of the BSON ObjectId type. */
@@ -15,23 +16,21 @@ export class ObjectId {
 
   readonly _bsontype: string = "ObjectId";
   readonly id: Uint8Array;
-  private cachedHex?: string;
+  private _cachedHex?: string;
 
   /** Creates an ObjectId instance. */
-  constructor(id?: number | string | Uint8Array) {
-    if (typeof id === "number" || id === null || id === undefined) {
+  constructor(id?: number | Int32 | string | Uint8Array) {
+    if (typeof id === "number" || id instanceof Int32 || id === null || id === undefined) {
       // The most common usecase (blank id, new objectId instance)
       // For this case param id should be considered an int timestamp in s
-      this.id = ObjectId.generate(id as number);
+      this.id = ObjectId.generate(id instanceof Int32 ? id.value : id as number);
     } else if (typeof id === "string" && ObjectId.HEX_24.test(id)) {
-      this.cachedHex = id.toLowerCase();
+      this._cachedHex = id.toLowerCase();
       this.id = encode(id, "hex");
     } else if (id instanceof Uint8Array && id.byteLength === 12) {
       this.id = id;
     } else {
-      throw new TypeError(
-        "Input must be 12 bytes or a string of 24 hex characters"
-      );
+      throw new TypeError(`Invalid input: ${id}.`);
     }
   }
 
@@ -151,27 +150,8 @@ export class ObjectId {
     this.id[0] = (time >> 24) & 0xff;
   }
 
-  /** Converts the id into a 24-byte string, hex by default. */
-  toString(format: string = "hex"): string {
-    if (ObjectId.HEX.test(format)) {
-      if (this.cachedHex) {
-        return this.cachedHex;
-      } else {
-        const hex: string = decode(this.id, "hex");
-        this.cachedHex = hex;
-        return hex;
-      }
-    }
-    return decode(this.id, format);
-  }
-
   inspect(format: string = "hex"): string {
     return this.toString(format);
-  }
-
-  /** Converts to its JSON representation. */
-  toJSON(): string {
-    return this.toString("hex");
   }
 
   /** Compares the equality of this ObjectId with the other. */
@@ -202,5 +182,24 @@ export class ObjectId {
   /** Extended JSON representation of an object id. */
   toExtendedJSON(): { $oid: string } {
     return { $oid: this.toString("hex") };
+  }
+
+  /** Converts to its JSON representation. */
+  toJSON(): { $oid: string } {
+    return { $oid: this.toString("hex") };
+  }
+
+  /** Converts the id into a 24-byte string, hex by default. */
+  toString(format: string = "hex"): string {
+    if (ObjectId.HEX.test(format)) {
+      if (this._cachedHex) {
+        return this._cachedHex;
+      } else {
+        const hex: string = decode(this.id, "hex");
+        this._cachedHex = hex;
+        return hex;
+      }
+    }
+    return decode(this.id, format);
   }
 }
