@@ -1,6 +1,6 @@
 /** A class representation of the BSON Symbol type. */
 export class BSONSymbol {
-  readonly _bsontype: string = "BSONSymbol";
+  readonly _bsontype: string = "Symbol";
 
   readonly value: string;
 
@@ -20,22 +20,22 @@ export class BSONSymbol {
   }
 
   /** String representatin of a symbol. */
-  toString(): string {
-    return this.value;
-  }
-
-  /** String representatin of a symbol. */
   inspect(): string {
     return this.toString();
-  }
-
-  /** JSON representation of a szymbol. */
-  toJSON(): string {
-    return this.value;
   }
 
   /** Extendedd JSON representation of a symbol. */
   toExtendedJSON(): { $symbol: string } {
     return { $symbol: this.value };
+  }
+  
+  /** JSON representation of a szymbol. */
+  toJSON(): { $symbol: string } {
+    return this.toExtendedJSON();
+  }
+  
+  /** String representatin of a symbol. */
+  toString(): string {
+    return this.value;
   }
 }

@@ -21,7 +21,7 @@ import { Double } from "./../double.ts"
 import { Timestamp } from "./../timestamp.ts"
 import {ObjectId } from "./../object_id.ts"
 import {BSONRegExp} from "./../regexp.ts"
-// import {BSONSymbol} from "./symbol.ts"
+import {BSONSymbol} from "./../symbol.ts"
 import {Int32} from "./../int32.ts"
 import {Code} from "./../code.ts"
 import {Decimal128} from "./../decimal128.ts"
@@ -406,8 +406,12 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
         buf[index + stringSize - 1] !== 0
       )
         {throw new TypeError('Bad string length in bson.');}
-      // symbol is deprecated - upgrade to string.
-      object[name] = decode(buf.subarray(index,index+stringSize-1), "utf8")//buf.toString('utf8', index, index + stringSize - 1);
+      // symbol is deprecated
+      if (options.bsonSymbol) {
+              object[name] = new BSONSymbol(decode(buf.subarray(index,index+stringSize-1), "utf8"))
+      } else {
+         object[name] = decode(buf.subarray(index,index+stringSize-1), "utf8")
+      }
       index += stringSize;
     } else if (elementType === CONSTANTS.BSON_DATA_TIMESTAMP) {
       const lowBits: number =
@@ -636,6 +640,8 @@ export interface DeserializationOptions {
   fieldsAsRaw?: any,
   // Return BSON regular expressions as BSONRegExp instances.
   bsonRegExp?: boolean,
+  // Return deprecated BSON symbols as BSONSymbol instances or instead (recommended) as a string?
+  bsonSymbol?: boolean,
   // Allows the buf to be larger than the parsed BSON object.
   allowObjectSmallerThanBufferSize?: boolean
   // Offset from which to start deserialization.
@@ -661,7 +667,8 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
     promoteBuffers: false,
     promoteValues: false,
    fieldsAsRaw: null,
-    bsonRegExp: true,
+    bsonRegExp: false,
+    bsonSymbol: false,
     allowObjectSmallerThanBufferSize: false,
     offset: 0,
     raw: false
