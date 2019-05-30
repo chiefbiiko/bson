@@ -4,22 +4,20 @@ import { encode, decode} from "./transcoding.ts"
 import { serialize, deserialize } from "./bson.ts"
 
 const testVectors: { [key:string]: any} = JSON.parse(
-  decode(Deno.readFileSync("./../corpus/binary_test_vectors.json"),"utf8")
+  decode(Deno.readFileSync("./../corpus/code_test_vectors.json"),"utf8")
 )
 
 testVectors.valid
-// Filtering two test cases regarding conflicts with the $type query operator
-.filter(({ description}: {description: string}): boolean  => !/type query operator/.test(description) )
 .forEach(({ description, canonical_bson, canonical_extjson}:  { [key:string]: string}): void => {
   test({
     name: description,
     fn():void {
       const expected_bson: Uint8Array = encode(canonical_bson, "hex")
-      const bin: { [key:string]: any} = deserialize(expected_bson)
-      const bin_extjson: string = JSON.stringify(bin.toExtendedJSON ? bin.toExtendedJSON() : bin)
+      const code: { [key:string]: any} = deserialize(expected_bson)
+      const code_extjson: string = JSON.stringify(code.toExtendedJSON ? code.toExtendedJSON() : code)
       // Reparsing from extended JSON bc of hardly controllable key order
-      assertEquals(JSON.parse(bin_extjson), JSON.parse(canonical_extjson))
-      assertEquals(serialize(bin), expected_bson)
+      assertEquals(JSON.parse(code_extjson), JSON.parse(canonical_extjson))
+      assertEquals(serialize(code), expected_bson)
     }
   })
 })

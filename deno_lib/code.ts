@@ -18,11 +18,6 @@ export class Code {
     return new Code(doc.$code, doc.$scope!);
   }
 
-  /** JSON fragment representation of a code instance. */
-  toJSON(): { code: Function | string; scope: { [key: string]: any } } {
-    return { scope: this.scope, code: this.code };
-  }
-
   /** Extended JSON representation of a code instance. */
   toExtendedJSON(): {
     $code: Function | string;
@@ -32,5 +27,13 @@ export class Code {
       return { $code: this.code, $scope: this.scope };
     }
     return { $code: this.code };
+  }
+  
+  /** JSON representation of a code instance. */
+  toJSON(): {
+    $code: Function | string;
+    $scope?: { [key: string]: any };
+  } {
+    return this.toExtendedJSON();
   }
 }

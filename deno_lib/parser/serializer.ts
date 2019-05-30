@@ -13,7 +13,7 @@ import { Double } from "./../double.ts"
 import {ObjectId } from "./../object_id.ts"
 import {BSONRegExp} from "./../regexp.ts"
 import {BSONSymbol} from "./../symbol.ts"
-// import {Int32} from "./int32.ts"
+import {Int32} from "./../int32.ts"
 import {Code} from "./../code.ts"
 import {Decimal128} from "./../decimal128.ts"
 import {MinKey} from "./../min_key.ts"
@@ -453,7 +453,7 @@ buf.set(encodedKey, index);
   return index;
 }
 
-function serializeInt32(buf: Uint8Array, key: string, value: number, index: number/*, isArray: boolean*/): number {
+function serializeInt32(buf: Uint8Array, key: string, value: Int32, index: number/*, isArray: boolean*/): number {
   buf[index++] = CONSTANTS.BSON_DATA_INT;
   // Number of written bytes
   // const numberOfWrittenBytes = !isArray
@@ -466,10 +466,10 @@ buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Write the int value
-  buf[index++] = value & 0xff;
-  buf[index++] = (value >> 8) & 0xff;
-  buf[index++] = (value >> 16) & 0xff;
-  buf[index++] = (value >> 24) & 0xff;
+  buf[index++] = value.value & 0xff;
+  buf[index++] = (value.value >> 8) & 0xff;
+  buf[index++] = (value.value >> 16) & 0xff;
+  buf[index++] = (value.value >> 24) & 0xff;
   return index;
 }
 
@@ -613,18 +613,18 @@ function serializeCode(
     // const size = buf.write(functionString, index + 4, 'utf8') + 1;
     const encodedFunction: Uint8Array = encode(normalizeFunctionString(value.code), "utf8")
     // Index adjustment
-    index += 4;
+    // index += 4;
     // Write string into buf
     // const codeSize = buf.write(functionString, index + 4, 'utf8') + 1;
         buf.set(encodedFunction, index + 4)
-    const size: number = encodedFunction.byteLength +1
+    const codeSize: number = encodedFunction.byteLength +1
     // Write the size of the string to buf
-    buf[index] = size & 0xff;
-    buf[index + 1] = (size >> 8) & 0xff;
-    buf[index + 2] = (size >> 16) & 0xff;
-    buf[index + 3] = (size >> 24) & 0xff;
+    buf[index] = codeSize & 0xff;
+    buf[index + 1] = (codeSize >> 8) & 0xff;
+    buf[index + 2] = (codeSize >> 16) & 0xff;
+    buf[index + 3] = (codeSize >> 24) & 0xff;
     // Update index
-    index += 4 + size - 1;
+    index += 4 + codeSize - 1;
     buf[index++] = 0;
   }
 

@@ -65,7 +65,7 @@ export class DBRef {
     return doc;
   }
   
-  /** JSON fragment representation of a db reference. */
+  /** JSON representation of a db reference. */
   toJSON(): { [key: string]: any } {
     return this.toExtendedJSON();
   }

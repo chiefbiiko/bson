@@ -39,7 +39,7 @@ export class Binary {
    *  - **BSON.BSON_BINARY_SUBTYPE_USER_DEFINED**, BSON user defined type.
    */
   constructor(buf?: Uint8Array | number[] | string, subType?: number) {
-    this.subType = subType == null ? Binary.SUBTYPE_DEFAULT : subType;
+    this.subType = subType || Binary.SUBTYPE_DEFAULT;
     this._position = 0;
 
     if (buf !== null) {
@@ -153,7 +153,7 @@ export class Binary {
     };
   }
 
-  /** JSON fragment representation of a binary. */
+  /** JSON representation of a binary. */
   toJSON(): { $binary: { base64: string; subType: string } } {
     return this.toExtendedJSON();
   }
