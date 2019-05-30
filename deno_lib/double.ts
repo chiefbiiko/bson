@@ -33,17 +33,20 @@ export class Double {
   //   return this.value;
   // }
 
-  /** JSON fragment representation of a double. */
-  toJSON(): number {
-    return this.value;
+  /** JSON representation of a double. */
+  toJSON(): { $numberDouble: string } {
+    return this.toExtendedJSON() as { $numberDouble: string };
   }
 
   /** Extended JSON representation of a double. */
   toExtendedJSON(options?: {
     relaxed?: boolean;
   }): number | { $numberDouble: string } {
+    // DIRTY WORKAROUND 4 a string representation
+    let dbl: string = this.value.toString();
+    dbl = !dbl.includes(".") && !dbl.includes("NaN") && !dbl.includes("Infinity") ? `${dbl}.0` : dbl
     return options && options.relaxed && isFinite(this.value)
       ? this.value
-      : { $numberDouble: this.value.toString() };
+      : { $numberDouble: dbl };
   }
 }
