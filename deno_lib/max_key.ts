@@ -8,7 +8,7 @@ export class MaxKey {
   readonly value: Long = Long.fromString("9223372036854775807")
 
   /** Creates a maxkey from its extended JSON representation. */
-  static fromExtendedJSON() {
+  static fromExtendedJSON(): MaxKey {
     return new MaxKey();
   }
 
@@ -17,8 +17,13 @@ export class MaxKey {
     return this.value.toString();
   }
 
+  /** JSON representation of a maxkey. */
+  toJSON(): { $maxKey: number } {
+    return this.toExtendedJSON();
+  }
+
   /** Extended JSON represtation of a maxkey. */
-  toExtendedJSON() {
-    return { $maxKey: this.value.toString() };
+  toExtendedJSON(): { $maxKey: number } {
+    return { $maxKey: this.value.toNumber() };
   }
 }

@@ -8,7 +8,7 @@ export class MinKey {
   readonly value: Long = Long.fromString("-9223372036854775808");
 
   /** Creates a minkey from its extended JSON representation. */
-  static fromExtendedJSON() {
+  static fromExtendedJSON(): MinKey {
     return new MinKey();
   }
   
@@ -17,8 +17,13 @@ export class MinKey {
     return this.value.toString();
   }
 
+  /** JSON representation of a minkey. */
+  toJSON(): { $minKey: number } {
+    return this.toExtendedJSON();
+  }
+
   /** Extended JSON represtation of a minkey. */
-  toExtendedJSON() {
-    return { $minKey: this.value.toString() };
+  toExtendedJSON(): { $minKey: number } {
+    return { $minKey: this.value.toNumber() };
   }
 }
