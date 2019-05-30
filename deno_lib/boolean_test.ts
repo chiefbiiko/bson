@@ -13,7 +13,7 @@ testVectors.valid.forEach(({ description, canonical_bson, canonical_extjson}:  {
     fn():void {
       const doc:  {[key:string]: any} = deserialize(encode(canonical_bson, "hex"))
       // assertEquals(doc, Boolean(description))
-      // const doc_extjson: string = JSON.stringify(doc.toExtendedJSON ? doc.toExtendedJSON() : doc)
+      // const doc_extjson: string = JSON.stringify(doc)
       // // Reparsing from extended JSON bc of hardly controllable key order
       assertEquals(doc, JSON.parse(canonical_extjson))
     }
