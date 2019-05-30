@@ -781,7 +781,7 @@ export function serializeInto(
       }
 
       const type:string = typeof value;
-      const bsontype:string = value._bsontype;
+      const bsontype:string = value === null || value === undefined ? null : value._bsontype;
       if (type === 'string') {
         index = serializeString(buf, key, value, index/*, true*/);
       } else if (type === 'number') {
@@ -875,7 +875,7 @@ export function serializeInto(
 
       // Check the type of the value
       const type: string = typeof value;
-      const bsontype:string = value._bsontype;
+      const bsontype:string = value === null || value === undefined ? null : value._bsontype;
       // Check the key and throw error if it's illegal
       if (typeof key === 'string' && !ignoreKeys.has(key)) {
         // if (key.match(null_regex) != null) {
@@ -979,7 +979,7 @@ export function serializeInto(
 
       // Check the type of the value
       const type = typeof value;
-  const bsontype:string = value._bsontype;
+  const bsontype:string = value === null || value === undefined ? null : value._bsontype;
 
   ////////////////////
   console.error("key", key, "value", value, "type", type, "bsontype", bsontype)

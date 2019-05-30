@@ -1,14 +1,15 @@
-import {
-  prettier,
-  prettierPlugins
-} from "https://deno.land/std/prettier/prettier.ts";
+// import {
+//   prettier,
+//   prettierPlugins
+// } from "https://deno.land/std/prettier/prettier.ts";
 
 /** Normalizes given function's string representation via prettier. */
 export function normalizeFunctionString(fn: Function | string): string {
-  return prettier.format(String(fn), {
-    parser: "babel",
-    plugins: prettierPlugins
-  });
+  // return prettier.format(String(fn), {
+  //   parser: "babel",
+  //   plugins: prettierPlugins
+  // });
+  return String(fn).replace("function(", "function (")
 }
 
 /** Calculates the byte length of an utf8 string. */
