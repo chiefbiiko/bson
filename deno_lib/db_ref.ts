@@ -1,4 +1,3 @@
-import { Int32} from "./int32.ts"
 import { ObjectId} from "./object_id.ts"
 
 const HEX_24: RegExp = /^[0-9a-fA-F]{24}$/;
@@ -68,16 +67,6 @@ export class DBRef {
   
   /** JSON fragment representation of a db reference. */
   toJSON(): { [key: string]: any } {
-    const doc: { [key: string]: any } = Object.assign(
-      {
-        $ref: this.collection,
-        $id: this.oid
-      },
-      this.fields
-    );
-    if (this.db) {
-      doc.$db = this.db;
-    }
-    return doc;
+    return this.toExtendedJSON();
   }
 }

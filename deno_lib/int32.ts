@@ -39,6 +39,6 @@ export class Int32 {
   
   /** JSON representation of an int32. */
   toJSON(): { $numberInt: string } {
-    return { $numberInt: this.value.toString() }
+    return this.toExtendedJSON() as { $numberInt: string };
   }
 }

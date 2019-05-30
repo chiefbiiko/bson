@@ -186,7 +186,7 @@ export class ObjectId {
 
   /** Converts to its JSON representation. */
   toJSON(): { $oid: string } {
-    return { $oid: this.toString("hex") };
+    return this.toExtendedJSON();
   }
 
   /** Converts the id into a 24-byte string, hex by default. */

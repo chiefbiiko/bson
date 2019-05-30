@@ -142,17 +142,6 @@ export class Binary {
     return this._position;
   }
 
-  /** String representation of a binary. */
-  toString(format: string = "utf8"): string {
-    const buf: Uint8Array = this._buf.subarray(0, this._position);
-    return decode(buf, format);
-  }
-
-  /** JSON fragment representation of a binary. */
-  toJSON(): string {
-    return decode(this._buf.subarray(0, this._position), "base64");
-  }
-
   /** Extended JSON representation of a binary. */
   toExtendedJSON(): { $binary: { base64: string; subType: string } } {
     const subType: string = this.subType.toString(16);
@@ -162,5 +151,16 @@ export class Binary {
         subType: subType.length === 1 ? "0" + subType : subType
       }
     };
+  }
+
+  /** JSON fragment representation of a binary. */
+  toJSON(): { $binary: { base64: string; subType: string } } {
+    return this.toExtendedJSON();
+  }
+
+  /** String representation of a binary. */
+  toString(format: string = "utf8"): string {
+    const buf: Uint8Array = this._buf.subarray(0, this._position);
+    return decode(buf, format);
   }
 }

@@ -292,22 +292,22 @@ export function deserializeStream(bson, startIndex, numberOfDocuments, documents
   // options = Object.assign({ allowObjectSmallerThanBufferSize: true }, options);
   // data = ensureBuffer(data);
 
-  let offset: number = startIndex;
+  let index: number = startIndex;
   // Loop over all documents
   for (let i:number = 0; i < numberOfDocuments; i++) {
     // Find size of the document
     const size: number =
-      bson[offset] | (bson[offset + 1] << 8) | (bson[offset + 2] << 16) | (bson[offset + 3] << 24);
+      bson[index] | (bson[index + 1] << 8) | (bson[index + 2] << 16) | (bson[index + 3] << 24);
     // Update options with index
     // options.index = offset;
     // Parse the document at this point
-    documents[docStartIndex + i] = deserialize(bson, /*options*/ {...options, index: offset});
+    documents[docStartIndex + i] = deserialize(bson, /*options*/ {...options, offset: index});
     // Adjust index by the document size
-    offset += size;
+    index += size;
   }
 
   // Return object containing end index of parsing and list of documents
-  return offset;
+  return index;
 }
 
 
