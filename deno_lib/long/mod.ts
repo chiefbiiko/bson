@@ -757,6 +757,20 @@ export class Long {
     ]);
   }
 
+  /** Extended JSON representation of a long. */
+  toExtendedJSON(options?: {
+    relaxed?: boolean;
+  }): number | { [key: string]: any } {
+    if (options && options.relaxed) {
+      return this.toNumber();
+    }
+    return { $numberLong: this.toString() };
+  }
+  
+  /** JSON representation of a long. */
+  toJSON(): { [key: string]: any } {
+    return this.toExtendedJSON() as { [key: string]: any };
+  }
   /** Converts the Long to a string written in the specified radix. */
   toString(radix: number = 10): string {
     if (radix < 2 || 36 < radix) {
@@ -800,16 +814,6 @@ export class Long {
         result = "" + digits + result;
       }
     }
-  }
-
-  /** Extended JSON representation of a long. */
-  toExtendedJSON(options?: {
-    relaxed?: boolean;
-  }): number | { [key: string]: any } {
-    if (options && options.relaxed) {
-      return this.toNumber();
-    }
-    return { $numberLong: this.toString() };
   }
 }
 
