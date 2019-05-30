@@ -35,6 +35,13 @@ export class BSONRegExp {
     );
   }
 
+  /** JSON representation of a regular expression. */
+  toJSON(): {
+    $regularExpression: { pattern: string; options: string };
+  } {
+    return this.toExtendedJSON();
+  }
+
   /** Extended JSON representation of a BSONRegExp instance. */
   toExtendedJSON(): {
     $regularExpression: { pattern: string; options: string };

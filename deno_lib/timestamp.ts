@@ -62,8 +62,8 @@ export class Timestamp extends Long {
   }
 
   /** JSON representation of a timestamp. */
-  toJSON(): { $timestamp: string } {
-    return { $timestamp: this.toString() };
+  toJSON(): { $timestamp: { t: number; i: number } } {
+    return this.toExtendedJSON();
   }
 
   /** Extended JSON representation of a timestamp. */

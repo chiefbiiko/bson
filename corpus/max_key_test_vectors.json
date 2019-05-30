@@ -6,7 +6,7 @@
         {
             "description": "Maxkey",
             "canonical_bson": "080000007F610000",
-            "canonical_extjson": "{\"a\" : {\"$maxKey\" : 9223372036854775807}}"
+            "canonical_extjson": "{\"a\" : {\"$maxKey\" : 9223372036854776000}}"
         }
     ]
 }

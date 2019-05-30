@@ -661,7 +661,7 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
     promoteBuffers: false,
     promoteValues: false,
    fieldsAsRaw: null,
-    bsonRegExp: false,
+    bsonRegExp: true,
     allowObjectSmallerThanBufferSize: false,
     offset: 0,
     raw: false
