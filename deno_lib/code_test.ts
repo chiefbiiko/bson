@@ -13,11 +13,11 @@ testVectors.valid
     name: description,
     fn():void {
       const expected_bson: Uint8Array = encode(canonical_bson, "hex")
-      const code: { [key:string]: any} = deserialize(expected_bson)
-      const code_extjson: string = JSON.stringify(code.toExtendedJSON ? code.toExtendedJSON() : code)
+      const doc: { [key:string]: any} = deserialize(expected_bson)
+      const doc_extjson: string = JSON.stringify(doc.toExtendedJSON ? doc.toExtendedJSON() : doc)
       // Reparsing from extended JSON bc of hardly controllable key order
-      assertEquals(JSON.parse(code_extjson), JSON.parse(canonical_extjson))
-      assertEquals(serialize(code), expected_bson)
+      assertEquals(JSON.parse(doc_extjson), JSON.parse(canonical_extjson))
+      assertEquals(serialize(doc), expected_bson)
     }
   })
 })

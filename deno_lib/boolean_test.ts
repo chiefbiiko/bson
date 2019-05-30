@@ -11,11 +11,11 @@ testVectors.valid.forEach(({ description, canonical_bson, canonical_extjson}:  {
   test({
     name: description,
     fn():void {
-      const bool:  {[key:string]: any} = deserialize(encode(canonical_bson, "hex"))
-      // assertEquals(bool, Boolean(description))
-      // const bool_extjson: string = JSON.stringify(bool.toExtendedJSON ? bool.toExtendedJSON() : bool)
+      const doc:  {[key:string]: any} = deserialize(encode(canonical_bson, "hex"))
+      // assertEquals(doc, Boolean(description))
+      // const doc_extjson: string = JSON.stringify(doc.toExtendedJSON ? doc.toExtendedJSON() : doc)
       // // Reparsing from extended JSON bc of hardly controllable key order
-      assertEquals(bool, JSON.parse(canonical_extjson))
+      assertEquals(doc, JSON.parse(canonical_extjson))
     }
   })
 })

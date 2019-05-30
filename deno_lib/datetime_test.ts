@@ -4,7 +4,7 @@ import { encode, decode} from "./transcoding.ts"
 import { serialize, deserialize } from "./bson.ts"
 
 const testVectors: { [key:string]: any} = JSON.parse(
-  decode(Deno.readFileSync("./../corpus/code_with_scope_test_vectors.json"),"utf8")
+  decode(Deno.readFileSync("./../corpus/datetime_test_vectors.json"),"utf8")
 )
 
 testVectors.valid

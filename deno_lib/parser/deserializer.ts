@@ -28,6 +28,7 @@ import {Decimal128} from "./../decimal128.ts"
 import {MinKey} from "./../min_key.ts"
 import {MaxKey} from "./../max_key.ts"
 import { DBRef} from "./../db_ref.ts"
+import { DateTime } from "./../datetime.ts"
 import {Binary} from "./../binary.ts"
 import * as CONSTANTS from "./../constants.ts"
 import { validateUtf8} from "./../validate_utf8.ts"
@@ -161,7 +162,8 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
         (buf[index++] << 8) |
         (buf[index++] << 16) |
         (buf[index++] << 24);
-      object[name] = new Date(new Long(lowBits, highBits).toNumber());
+      // object[name] = new Date(new Long(lowBits, highBits).toNumber());
+      object[name] = new DateTime(new Long(lowBits, highBits));
     } else if (elementType === CONSTANTS.BSON_DATA_BOOLEAN) {
       if (buf[index] !== 0 && buf[index] !== 1) {throw new TypeError('Illegal boolean type value.');}
       object[name] = buf[index++] === 1;

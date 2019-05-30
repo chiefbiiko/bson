@@ -20,6 +20,7 @@ import {MinKey} from "./../min_key.ts"
 import {MaxKey} from "./../max_key.ts"
 import { DBRef} from "./../db_ref.ts"
 import {Binary} from "./../binary.ts"
+import { DateTime } from "./../datetime.ts"
 // TODO: Get rid of below import with DataView
 // import { writeIEEE754 } from "./../float_parser.ts";
 // import { Long } from "./../long/mod.ts";
@@ -188,7 +189,7 @@ function serializeBoolean(buf: Uint8Array, key: string, value: boolean, index: n
   return index;
 }
 
-function serializeDate(buf: Uint8Array, key: string, value: Date, index: number/*, isArray: boolean*/): number {
+function serializeDate(buf: Uint8Array, key: string, value: Date | DateTime, index: number/*, isArray: boolean*/): number {
   buf[index++] = CONSTANTS.BSON_DATA_DATE;
   // Number of written bytes
   // const numberOfWrittenBytes = !isArray
@@ -201,9 +202,10 @@ function serializeDate(buf: Uint8Array, key: string, value: Date, index: number/
   index += encodedKey.byteLength;
   buf[index++] = 0;
   // Write the date
-  const dateInMilis: Long = Long.fromNumber(value.getTime());
-  const lowBits: number = dateInMilis.getLowBits();
-  const highBits: number = dateInMilis.getHighBits();
+  // const dateInMilis: Long = Long.fromNumber(value.getTime());
+  const dateMs: Long = value instanceof DateTime ? value.time:  Long.fromNumber(value.getTime()) ;
+  const lowBits: number = dateMs.getLowBits();
+  const highBits: number = dateMs.getHighBits();
   // Encode low bits
   buf[index++] = lowBits & 0xff;
   buf[index++] = (lowBits >> 8) & 0xff;
@@ -806,7 +808,7 @@ export function serializeInto(
         index = serializeNumber(buf, key, value, index/*, true*/);
       } else if (type === 'boolean') {
         index = serializeBoolean(buf, key, value, index/*, true*/);
-      } else if (value instanceof Date/* || isDate(value)*/) {
+      } else if (value instanceof Date ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index/*, true*/);
       } else if (value === undefined) {
         index = serializeNull(buf, key, value, index/*, true*/);
@@ -918,7 +920,7 @@ export function serializeInto(
         index = serializeNumber(buf, key, value, index);
       } else if (type === 'boolean') {
         index = serializeBoolean(buf, key, value, index);
-      } else if (value instanceof Date/* || isDate(value)*/) {
+      } else if (value instanceof Date  ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index);
       } else if (value === null || (value === undefined && ignoreUndefined === false)) {
         index = serializeNull(buf, key, value, index);
@@ -1023,7 +1025,7 @@ export function serializeInto(
         index = serializeNumber(buf, key, value, index);
       } else if (type === 'boolean') {
         index = serializeBoolean(buf, key, value, index);
-      } else if (value instanceof Date/* || isDate(value)*/) {
+      } else if (value instanceof Date  ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index);
       } else if (value === undefined) {
         if (ignoreUndefined === false) {index = serializeNull(buf, key, value, index);}
