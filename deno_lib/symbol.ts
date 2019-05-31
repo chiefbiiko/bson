@@ -1,6 +1,6 @@
 /** A class representation of the BSON Symbol type. */
 export class BSONSymbol {
-  readonly _bsontype: string = "Symbol";
+  readonly _bsontype: string = "BSONSymbol";
 
   readonly value: string;
 

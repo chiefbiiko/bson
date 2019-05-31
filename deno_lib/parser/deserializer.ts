@@ -412,7 +412,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
         {throw new TypeError('Bad string length in bson.');}
       // symbol is deprecated - promoting to a string by default
       if (!options.promoteValues) {
-              object[name] = new BSONSymbol(decode(buf.subarray(index,index+stringSize-1), "utf8"))
+              object[name] = Symbol(decode(buf.subarray(index,index+stringSize-1), "utf8"))
       } else {
          object[name] = decode(buf.subarray(index,index+stringSize-1), "utf8")
       }

@@ -699,7 +699,7 @@ function serializeBinary(buf: Uint8Array, key: string, value: Binary, index: num
   return index;
 }
 
-function serializeSymbol(buf: Uint8Array, key: string, value: BSONSymbol, index: number/*, isArray*/): number {
+function serializeSymbol(buf: Uint8Array, key: string, value: symbol | BSONSymbol, index: number/*, isArray*/): number {
   // Write the type
   buf[index++] = CONSTANTS.BSON_DATA_SYMBOL;
   // Number of written bytes
@@ -714,7 +714,8 @@ function serializeSymbol(buf: Uint8Array, key: string, value: BSONSymbol, index:
   buf[index++] = 0;
   // Write the string
   // const size = buf.write(value.value, index + 4, 'utf8') + 1;
-  const encodedSymbol: Uint8Array = encode(value.value, "utf8");
+  const text: string = typeof value === "symbol" ? value.toString().replace(/^Symbol\((.[^)]*)\)$/, "$1") : value.value;
+  const encodedSymbol: Uint8Array = encode(text, "utf8");
   buf.set(encodedSymbol, index + 4)
   const size: number = encodedSymbol.byteLength + 1
   // Write the size of the string to buf
@@ -908,7 +909,7 @@ export function serializeInto(
         );
       } else if (bsontype === 'Binary') {
         index = serializeBinary(buf, key, value, index/*, true*/);
-      } else if (bsontype === 'Symbol') {
+      } else if (bsontype === 'BSONSymbol' || typeof value === "symbol") {
         index = serializeSymbol(buf, key, value, index/*, true*/);
       } else if (bsontype === 'DBRef') {
         index = serializeDBRef(buf, key, value, index, options /*depth, serializeFunctions/*, true*/);
@@ -1015,7 +1016,7 @@ export function serializeInto(
         index = serializeFunction(buf, key, value, index/*, checkKeys, depth, serializeFunctions*/);
       } else if (bsontype === 'Binary') {
         index = serializeBinary(buf, key, value, index);
-      } else if (bsontype === 'Symbol') {
+      } else if (bsontype === 'BSONSymbol' || typeof value === "symbol") {
         index = serializeSymbol(buf, key, value, index);
       } else if (bsontype === 'DBRef') {
         index = serializeDBRef(buf, key, value, index, options/*, depth, serializeFunctions*/);
@@ -1126,7 +1127,7 @@ export function serializeInto(
         index = serializeFunction(buf, key, value, index/*, checkKeys, depth, serializeFunctions*/);
       } else if (bsontype === 'Binary') {
         index = serializeBinary(buf, key, value, index);
-      } else if (bsontype === 'Symbol') {
+      } else if (bsontype === 'BSONSymbol' || typeof value === "symbol") {
         index = serializeSymbol(buf, key, value, index);
       } else if (bsontype === 'DBRef') {
         index = serializeDBRef(buf, key, value, index, options/* depth, serializeFunctions*/);

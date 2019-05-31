@@ -994,100 +994,61 @@ test({name: 'serialize and deserialize utf8', fn():void {
   const bson: Uint8Array = serialize(expected_doc)
   const doc: {[key:string]: any} = deserialize(bson)
   assertEquals(doc, expected_doc)
-  assertEquals(doc, expected_doc)
   const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
   serializeInto(buf, doc)
   assertEquals(buf, bson);
 }});
 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize query object', function(done) {
-//   var doc = { count: 'remove_with_no_callback_bug_test', query: {}, fields: null };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var deserialized_data = BSON.deserialize(serialized_data);
-//   expect(doc).to.deep.equal(deserialized_data);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize empty query object', function(done) {
-//   var doc = {};
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var deserialized_data = BSON.deserialize(serialized_data);
-//   expect(doc).to.deep.equal(deserialized_data);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize array based doc', function(done) {
-//   var doc = { b: [1, 2, 3], _id: new ObjectId() };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var deserialized_data = BSON.deserialize(serialized_data);
-//   expect(doc.b).to.deep.equal(deserialized_data.b);
-//   expect(doc).to.deep.equal(deserialized_data);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize Symbol', function(done) {
-//   if (BSONSymbol != null) {
-//     // symbols are deprecated, so upgrade to strings... so I'm not sure
-//     // we really need this test anymore...
-//     //var doc = { b: [new BSONSymbol('test')] };
-// 
-//     var doc = { b: ['test'] };
-//     var serialized_data = BSON.serialize(doc);
-//     var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//     BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//     assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//     var deserialized_data = BSON.deserialize(serialized_data);
-//     expect(doc).to.deep.equal(deserialized_data);
-//     expect(typeof deserialized_data.b[0]).to.equal('string');
-//   }
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should handle Deeply nested document', function(done) {
-//   var doc = { a: { b: { c: { d: 2 } } } };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var deserialized_data = BSON.deserialize(serialized_data);
-//   expect(doc).to.deep.equal(deserialized_data);
-//   done();
-// });
-// 
+test({
+  name: 'serialize and deserialize query object', fn():void {
+      const expected_doc: {[key:string]: any} = { count: 'remove_with_no_callback_bug_test', query: {}, fields: null };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+
+test({
+  name: 'serialized symbol deserializes as string by default', fn(): void {
+    const input_doc: {[key:string]: any} = { symbol: Symbol("deprecated") };
+    const expected_doc: {[key:string]: any} = { symbol: "deprecated" };
+  const bson: Uint8Array = serialize(input_doc)
+  const doc: {[key:string]: any} = deserialize(bson)
+  assertEquals(doc, expected_doc)
+  const buf: Uint8Array = new Uint8Array(bson.byteLength)
+  serializeInto(buf, input_doc)
+  assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'optionally deserialize symbol as is', fn(): void {
+    let expected_doc: {[key:string]: any} = { symbol: Symbol("deprecated") };
+  let bson: Uint8Array = serialize(expected_doc)
+  let doc: {[key:string]: any} = deserialize(bson, { promoteValues: false})
+  assertEquals(doc.symbol.toString(), expected_doc.symbol.toString())
+  let buf: Uint8Array = new Uint8Array(bson.byteLength)
+  serializeInto(buf, doc)
+  assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize deeply nested document', fn():void {
+    const expected_doc: {[key:string]: any} = { a: { b: { c: { d: 2 } } } };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
 // /**
 //  * @ignore
 //  */
