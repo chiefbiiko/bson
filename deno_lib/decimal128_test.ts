@@ -3,7 +3,58 @@ import {
   assertEquals,
   assertThrows
 } from "https://deno.land/x/testing/asserts.ts";
+import { encode, decode} from "./transcoding.ts"
+import { serialize, deserialize, EJSON } from "./bson.ts"
 import { Decimal128 } from "./decimal128.ts";
+
+interface TestVectors {
+  valid: {[key:string]: string}[]; parseErrors: {[key:string]: string}[];
+}
+
+function loadTestVectors(files: string[]): TestVectors {
+  const testVectors: TestVectors = {valid:[], parseErrors:[]};
+  for (const file of files) {
+    const {valid, parseErrors}: TestVectors = JSON.parse(decode(Deno.readFileSync(file),"utf8"))
+    // testVectors.valid.push(...valid)
+    Array.prototype.push.apply(testVectors.valid, valid)
+    // testVectors.parseErrors.push(...parseErrors)
+    Array.prototype.push.apply(testVectors.parseErrors, parseErrors)
+  }
+  return testVectors;
+}
+
+// const testVectors: { [key:string]: any} = JSON.parse(
+//   decode(Deno.readFileSync("./../corpus/max_key_test_vectors.json"),"utf8")
+// )
+
+const testVectors: TestVectors = loadTestVectors([
+  "./../corpus/decimal128_1_test_vectors.json",
+  "./../corpus/decimal128_2_test_vectors.json",
+])
+
+testVectors.valid
+.forEach(({ description, canonical_bson, canonical_extjson}:  { [key:string]: string}): void => {
+  test({
+    name: description,
+    fn():void {
+      const expected_bson: Uint8Array = encode(canonical_bson, "hex")
+      const doc: { [key:string]: any} = deserialize(expected_bson)
+      const doc_extjson: string = JSON.stringify(doc)
+      // Reparsing from extended JSON bc of hardly controllable key order
+      assertEquals(JSON.parse(doc_extjson), JSON.parse(canonical_extjson))
+      assertEquals(serialize(doc), expected_bson)
+    }
+  })
+})
+
+testVectors.parseErrors.forEach(({ description, string }:  { [key:string]: string}): void => {
+  test({
+    name: description,
+    fn():void {
+      assertThrows(() => EJSON.parse(string))
+    }
+  })
+})
 
 const NAN_BUF: Uint8Array = Uint8Array.from(
   [

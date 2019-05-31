@@ -1,7 +1,7 @@
 import { test, runIfMain } from "https://deno.land/x/testing/mod.ts";
 import { assertEquals, assertThrows } from "https://deno.land/x/testing/asserts.ts";
 import { encode, decode} from "./transcoding.ts"
-import { serialize, deserialize } from "./bson.ts"
+import { serialize, deserialize, EJSON } from "./bson.ts"
 
 const testVectors: { [key:string]: any} = JSON.parse(
   decode(Deno.readFileSync("./../corpus/top_test_vectors.json"),"utf8")
@@ -22,11 +22,20 @@ testVectors.valid
   })
 })
 
-testVectors.decodeErrors.concat(testVectors.parseErrors).forEach(({ description, bson }:  { [key:string]: string}): void => {
+testVectors.decodeErrors.forEach(({ description, bson }:  { [key:string]: string}): void => {
   test({
     name: description,
     fn():void {
       assertThrows(() => deserialize(encode(bson, "hex"), { promoteValues: false }))
+    }
+  })
+})
+
+testVectors.parseErrors.forEach(({ description, string }:  { [key:string]: string}): void => {
+  test({
+    name: description,
+    fn():void {
+      assertThrows(() => EJSON.parse(string))
     }
   })
 })
