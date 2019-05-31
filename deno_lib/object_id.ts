@@ -19,7 +19,7 @@ export class ObjectId {
   private _cachedHex?: string;
 
   /** Creates an ObjectId instance. */
-  constructor(id?: number | Int32 | string | Uint8Array) {
+  constructor(id?: number | Int32 | string | Uint8Array | ObjectId) {
     if (typeof id === "number" || id instanceof Int32 || id === null || id === undefined) {
       // The most common usecase (blank id, new objectId instance)
       // For this case param id should be considered an int timestamp in s
@@ -29,6 +29,8 @@ export class ObjectId {
       this.id = encode(id, "hex");
     } else if (id instanceof Uint8Array && id.byteLength === 12) {
       this.id = id;
+    } else if (id instanceof ObjectId) {
+      this.id = id.id;
     } else {
       throw new TypeError(`Invalid input: ${id}.`);
     }

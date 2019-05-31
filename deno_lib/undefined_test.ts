@@ -8,18 +8,18 @@ const testVectors: { [key:string]: any} = JSON.parse(
 )
 
 testVectors.valid
-.forEach(({ description, canonical_bson, canonical_extjson}:  { [key:string]: string}): void => {
+.forEach(({ description, converted_bson, converted_extjson}:  { [key:string]: string}): void => {
   // using the converted instead of the canonical items since this module
-  // promotes deprecated undefineds to nulls by default (toggleable)
+  // promotes deprecated undefineds to nulls by default (no opt-out)
   test({
     name: description,
     fn():void {
-      const expected_bson: Uint8Array = encode(canonical_bson, "hex")
-      const doc: { [key:string]: any} = deserialize(expected_bson, { promoteValues: false })
-      const bson: Uint8Array = serialize(doc, {ignoreUndefined: false, undefinedAsNull: false });
+      const expected_bson: Uint8Array = encode(converted_bson, "hex")
+      const doc: { [key:string]: any} = deserialize(expected_bson)
+      const bson: Uint8Array = serialize(doc);
       assertEquals(bson, expected_bson);
       // assertEquals(EJSON.parse(EJSON.stringify(doc)), doc);
-      // assertEquals(doc, EJSON.parse(canonical_extjson));
+      // assertEquals(doc, EJSON.parse(converted_extjson));
     }
   })
 })
