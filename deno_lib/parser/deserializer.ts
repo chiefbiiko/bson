@@ -161,9 +161,12 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
         buf[index++] |
         (buf[index++] << 8) |
         (buf[index++] << 16) |
-        (buf[index++] << 24);
-      // object[name] = new Date(new Long(lowBits, highBits).toNumber());
-      object[name] = new DateTime(new Long(lowBits, highBits));
+        (buf[index++] << 24);    
+      if (options.promoteValues) {
+        object[name] = new Date(new Long(lowBits, highBits).toNumber());
+      } else {
+        object[name] = new DateTime(new Long(lowBits, highBits));
+      }
     } else if (elementType === CONSTANTS.BSON_DATA_BOOLEAN) {
       if (buf[index] !== 0 && buf[index] !== 1) {throw new TypeError('Illegal boolean type value.');}
       object[name] = buf[index++] === 1;

@@ -218,7 +218,7 @@ function serializeDate(buf: Uint8Array, key: string, value: Date | DateTime, ind
   buf[index++] = 0;
   // Write the date
   // const dateInMilis: Long = Long.fromNumber(value.getTime());
-  const dateMs: Long = value instanceof DateTime ? value.time:  Long.fromNumber(value.getTime()) ;
+  const dateMs: Long = value instanceof DateTime ? value.time :  Long.fromNumber(value.getTime()) ;
   const lowBits: number = dateMs.getLowBits();
   const highBits: number = dateMs.getHighBits();
   // Encode low bits

@@ -10,8 +10,9 @@ export class DateTime {
   constructor(time: string | Long = Long.fromInt(new Date().getTime())) {
     if (typeof time === "string") {
       this.time = Long.fromString(time);
+    } else {
+      this.time = time;
     }
-    this.time = time as Long;
   }
   
   /** Creates a datetime from its extended JSON representation. */
