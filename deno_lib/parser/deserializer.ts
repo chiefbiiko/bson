@@ -181,7 +181,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
       if (options.raw) {
         object[name] = buf.slice(index, index + objectSize);
       } else {
-        object[name] = deserializeObject(buf, _index, options, false);  
+        object[name] = deserializeObject(buf, _index, options, false);
       }
 
       index += objectSize;
@@ -210,7 +210,8 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
       if (buf[index - 1] !== 0) {throw new TypeError('Invalid array terminator byte.');}
       if (index !== stopIndex) {throw new TypeError('Corrupted array bson.');}
     } else if (elementType === CONSTANTS.BSON_DATA_UNDEFINED) {
-      object[name] = undefined;
+      // undefined is deprecated - promoting to a null
+      object[name] = null;
     } else if (elementType === CONSTANTS.BSON_DATA_NULL) {
       object[name] = null;
     } else if (elementType === CONSTANTS.BSON_DATA_LONG) {
@@ -227,7 +228,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
         (buf[index++] << 24);
       const long: Long = new Long(lowBits, highBits);
       // Promote the long if possible
-      if (options.promoteLongs && options.promoteValues) {
+      if (options.promoteValues) {
         object[name] =
           long.lessThanOrEqual(JS_INT_MAX_LONG) && long.greaterThanOrEqual(JS_INT_MIN_LONG)
             ? long.toNumber()
@@ -280,7 +281,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
           {throw new TypeError('Binary type with subtype 0x02 contains to short binary size');}
       }
 
-      if (options.promoteBuffers && options.promoteValues) {
+      if (options.promoteValues) {
         object[name] = buf.slice(index, index + binarySize);
       } else {
         object[name] = new Binary(buf.slice(index, index + binarySize), subType);
@@ -320,7 +321,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
 
       // Update the index
       index += binarySize;
-    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && !options.bsonRegExp) {
+    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && options.promoteValues) {
       // Get the start search index
       i = index;
       // Locate the end of the c string
@@ -366,7 +367,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
       }
 
       object[name] = new RegExp(source, optionsArray.join(''));
-    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && options.bsonRegExp) {
+    } else if (elementType === CONSTANTS.BSON_DATA_REGEXP && !options.promoteValues) {
       // Get the start search index
       i = index;
       // Locate the end of the c string
@@ -406,8 +407,8 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
         buf[index + stringSize - 1] !== 0
       )
         {throw new TypeError('Bad string length in bson.');}
-      // symbol is deprecated
-      if (options.bsonSymbol) {
+      // symbol is deprecated - promoting to a string by default
+      if (!options.promoteValues) {
               object[name] = new BSONSymbol(decode(buf.subarray(index,index+stringSize-1), "utf8"))
       } else {
          object[name] = decode(buf.subarray(index,index+stringSize-1), "utf8")
@@ -630,18 +631,18 @@ export interface DeserializationOptions {
   cacheFunctions?: boolean,
   // Use a crc32 code for caching, otherwise use the string of the function.
   cacheFunctionsCrc32?: boolean,
-  // Downgrade Long to Number if it's smaller than 53 bits
-  promoteLongs?: boolean,
-  // Deserializing a Binary will return it as a node.js Buffer instance.
-  promoteBuffers?: boolean,
+  // // Downgrade Long to Number if it's smaller than 53 bits
+  // promoteLongs?: boolean,
+  // // Deserializing a Binary will return it as a node.js Buffer instance.
+  // promoteBuffers?: boolean,
   // Deserializing will promote BSON values to their closest nodejs types.
   promoteValues?: boolean,
   // Allow to specify what fields we wish to return as unserialized raw buf.
   fieldsAsRaw?: any,
-  // Return BSON regular expressions as BSONRegExp instances.
-  bsonRegExp?: boolean,
-  // Return deprecated BSON symbols as BSONSymbol instances or instead (recommended) as a string?
-  bsonSymbol?: boolean,
+  // // Return BSON regular expressions as BSONRegExp instances.
+  // bsonRegExp?: boolean,
+  // // Return deprecated BSON symbols as BSONSymbol instances or instead (recommended) as a string?
+  // bsonSymbol?: boolean,
   // Allows the buf to be larger than the parsed BSON object.
   allowObjectSmallerThanBufferSize?: boolean
   // Offset from which to start deserialization.
@@ -663,12 +664,12 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
     evalFunctions : false,
     cacheFunctions: false,
     cacheFunctionsCrc32: false,
-    promoteLongs: true,
-    promoteBuffers: false,
-    promoteValues: false,
+    // promoteLongs: true,
+    // promoteBuffers: false,
+    promoteValues: true,
    fieldsAsRaw: null,
-    bsonRegExp: false,
-    bsonSymbol: false,
+    // bsonRegExp: false,
+    // bsonSymbol: false,
     allowObjectSmallerThanBufferSize: false,
     offset: 0,
     raw: false

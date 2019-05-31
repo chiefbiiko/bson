@@ -9,7 +9,7 @@
 // const normalizeFunctionString = require('./utils').normalizeFunctionString;
 import { Long } from "./../long/mod.ts"
 import { Double } from "./../double.ts"
-// import { Timestamp } from "./timestamp.ts"
+import { Timestamp } from "./../timestamp.ts"
 import {ObjectId } from "./../object_id.ts"
 import {BSONRegExp} from "./../regexp.ts"
 import {BSONSymbol} from "./../symbol.ts"
@@ -426,9 +426,9 @@ buf.set(encodedKey, index);
   return index + 16;
 }
 
-function serializeLong(buf: Uint8Array, key: string, value: Long, index: number/*, isArray: boolean*/): number {
+function serializeLong(buf: Uint8Array, key: string, value: Long | Timestamp, index: number/*, isArray: boolean*/): number {
   // Indicate Long type
-  buf[index++] = Long.isLong(value) ? CONSTANTS.BSON_DATA_LONG : CONSTANTS.BSON_DATA_TIMESTAMP;
+  buf[index++] = value instanceof Timestamp ? CONSTANTS.BSON_DATA_TIMESTAMP : CONSTANTS.BSON_DATA_LONG;
   // Number of written bytes
   // const numberOfWrittenBytes = !isArray
   //   ? buf.write(key, index, 'utf8')
@@ -727,14 +727,14 @@ index += encodedKey.byteLength;
   // buf.set(encodedRef, index);
   // index += encodedRef.byteLength;
   // buf[index++] = 0
-  // 
+  //
   // // Write the oid
   // buf.set(value.oid.id, index)
   // index += value.oid.id.byteLength;
   // buf[index++] = 0
-  // 
+  //
   // // TODO: if value.db encode it, if value.fields encode it
-  // 
+  //
   // // Write the size
   // const size: number = index - initialIndex;
   // buf[initialIndex++] = size & 0xff;
@@ -749,14 +749,14 @@ index += encodedKey.byteLength;
     $ref: value.collection || value.namespace, // "namespace" was what library 1.x called "collection"
     $id: value.oid
   };
-  
+
   if (value.db) {
     output.$db = value.db;
   }
-  
+
   /*output = */Object.assign(output, value.fields);
   const endIndex: number = serializeInto(buf, output, false, index, depth + 1, serializeFunctions, false, null);
-  
+
   // Calculate object size
   const size = endIndex - startIndex;
   // Write the size

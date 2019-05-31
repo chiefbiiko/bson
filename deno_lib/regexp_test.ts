@@ -8,14 +8,12 @@ const testVectors: { [key:string]: any} = JSON.parse(
 )
 
 testVectors.valid
-// Filtering cases with too large doubles and negative zeros
-.filter(({description}: { description: string}): boolean => !description.includes("1.23456789012345677E+18") && !description.includes("-0.0"))
 .forEach(({ description, canonical_bson, canonical_extjson}:  { [key:string]: string}): void => {
   test({
     name: description,
     fn():void {
       const expected_bson: Uint8Array = encode(canonical_bson, "hex")
-      const doc: { [key:string]: any} = deserialize(expected_bson, { bsonRegExp: true })
+      const doc: { [key:string]: any} = deserialize(expected_bson, { promoteValues: false })
       const doc_extjson: string = JSON.stringify(doc)
       // Reparsing from extended JSON bc of hardly controllable key order
       assertEquals(JSON.parse(doc_extjson), JSON.parse(canonical_extjson))
@@ -28,7 +26,7 @@ testVectors.decodeErrors.forEach(({ description, bson }:  { [key:string]: string
   test({
     name: description,
     fn():void {
-      assertThrows(() => deserialize(encode(bson, "hex"), { bsonRegExp: true }))
+      assertThrows(() => deserialize(encode(bson, "hex"), { promoteValues: false }))
     }
   })
 })
