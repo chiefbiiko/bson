@@ -211,7 +211,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
       if (index !== stopIndex) {throw new TypeError('Corrupted array bson.');}
     } else if (elementType === CONSTANTS.BSON_DATA_UNDEFINED) {
       // undefined is deprecated - promoting to a null
-      object[name] = null;
+      object[name] = options.promoteValues ? null : undefined;
     } else if (elementType === CONSTANTS.BSON_DATA_NULL) {
       object[name] = null;
     } else if (elementType === CONSTANTS.BSON_DATA_LONG) {

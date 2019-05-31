@@ -14,10 +14,10 @@ testVectors.valid
     fn():void {
       const expected_bson: Uint8Array = encode(canonical_bson, "hex")
       const doc: { [key:string]: any} = deserialize(expected_bson, { promoteValues: false })
-      const doc_extjson: string = JSON.stringify(doc)
-      // Reparsing from extended JSON bc of hardly controllable key order
-      assertEquals(JSON.parse(doc_extjson), JSON.parse(canonical_extjson))
-      assertEquals(serialize(doc), expected_bson)
+      const bson: Uint8Array = serialize(doc);
+      assertEquals(bson, expected_bson);
+      // assertEquals(EJSON.parse(EJSON.stringify(doc)), doc);
+      // assertEquals(doc, EJSON.parse(canonical_extjson));
     }
   })
 })
@@ -31,13 +31,13 @@ testVectors.decodeErrors.forEach(({ description, bson }:  { [key:string]: string
   })
 })
 
-testVectors.parseErrors.forEach(({ description, string }:  { [key:string]: string}): void => {
-  test({
-    name: description,
-    fn():void {
-      assertThrows(() => EJSON.parse(string))
-    }
-  })
-})
+// testVectors.parseErrors.forEach(({ description, string }:  { [key:string]: string}): void => {
+//   test({
+//     name: description,
+//     fn():void {
+//       assertThrows(() => EJSON.parse(string, { relaxed: false, stict: true}))
+//     }
+//   })
+// })
 
 runIfMain(import.meta, { parallel: true});

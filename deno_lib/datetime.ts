@@ -7,8 +7,11 @@ export class DateTime {
   readonly time: Long;
   
   /** Creates a BSON DateTime instance. */
-  constructor(time: Long = Long.fromInt(new Date().getTime())) {
-    this.time = time;
+  constructor(time: string | Long = Long.fromInt(new Date().getTime())) {
+    if (typeof time === "string") {
+      this.time = Long.fromString(time);
+    }
+    this.time = time as Long;
   }
   
   /** Creates a datetime from its extended JSON representation. */

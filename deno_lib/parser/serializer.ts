@@ -172,6 +172,21 @@ function serializeNull(buf: Uint8Array, key: string, value: null, index: number/
   return index;
 }
 
+function serializeUndefined(buf: Uint8Array, key: string, value: undefined, index: number/*, isArray: boolean*/): number {
+  buf[index++] = CONSTANTS.BSON_DATA_UNDEFINED;
+  // Number of written bytes
+  // const numberOfWrittenBytes = !isArray
+  //   ? buf.write(key, index, 'utf8')
+  //   : buf.write(key, index, 'ascii');
+  // index = index + numberOfWrittenBytes;
+  // Encode the name
+  const encodedKey: Uint8Array = encode(key, "utf8");
+  buf.set(encodedKey, index);
+  index += encodedKey.byteLength;
+  buf[index++] = 0;
+  return index;
+}
+
 function serializeBoolean(buf: Uint8Array, key: string, value: boolean, index: number/*, isArray: boolean*/): number {
   buf[index++] = CONSTANTS.BSON_DATA_BOOLEAN;
   // Number of written bytes
@@ -367,21 +382,22 @@ function serializeObject(
   key: string,
   value: any,
   index: number,
-  checkKeys: boolean,
+  options: SerializationOptions
+  /*checkKeys: boolean,
   depth: number,
   serializeFunctions: boolean,
   ignoreUndefined: boolean,
   isArray: boolean,
-  path: any
+  path: any*/
 ) {
-  for (let i: number = 0; i < path.length; i++) {
-    if (path[i] === value) {
+  for (let i: number = 0; i < options.path.length; i++) {
+    if (options.path[i] === value) {
       throw new Error('cyclic dependency detected');
     }
   }
 
   // Push value to stack
-  path.push(value);
+  options.path.push(value);
   // Write the type
   buf[index++] = Array.isArray(value) ? CONSTANTS.BSON_DATA_ARRAY : CONSTANTS.BSON_DATA_OBJECT;
   // Number of written bytes
@@ -397,15 +413,17 @@ buf.set(encodedKey, index);
   const endIndex = serializeInto(
     buf,
     value,
-    checkKeys,
     index,
-    depth + 1,
+  /*  checkKeys,
+    index,*/
+    {...options, depth: options.depth + 1}
+  /*  depth + 1,
     serializeFunctions,
     ignoreUndefined,
-    path
+    path*/
   );
   // Pop stack
-  path.pop();
+  options.path.pop();
   return endIndex;
 }
 
@@ -529,11 +547,12 @@ function serializeCode(
   key: string,
   value: Code,
   index: number,
-  checkKeys: boolean,
+  options: SerializationOptions
+  /*checkKeys: boolean,
   depth: number,
   serializeFunctions: boolean,
   ignoreUndefined: boolean,
-  isArray: boolean
+  isArray: boolean*/
 ): number {
   if (value.scope && typeof value.scope === 'object') {
     // Write the type
@@ -578,12 +597,14 @@ function serializeCode(
     const endIndex: number = serializeInto(
       buf,
       value.scope,
-      checkKeys,
+      index,
+      {...options, depth: options.depth + 1, path: null}
+    /*  checkKeys,
       index,
       depth + 1,
       serializeFunctions,
       ignoreUndefined,
-      null
+      null*/
     );
     index = endIndex - 1;
 
@@ -707,7 +728,7 @@ function serializeSymbol(buf: Uint8Array, key: string, value: BSONSymbol, index:
   return index;
 }
 
-function serializeDBRef(buf: Uint8Array, key: string, value: DBRef, index: number, depth: number, serializeFunctions: boolean/*, isArray: boolean*/): number {
+function serializeDBRef(buf: Uint8Array, key: string, value: DBRef, index: number, options: SerializationOptions/*, depth: number, serializeFunctions: boolean/*, isArray: boolean*/): number {
   // let initialIndex: number = index;
   // Write the type
   buf[index++] = CONSTANTS.BSON_DATA_OBJECT;
@@ -755,7 +776,8 @@ index += encodedKey.byteLength;
   }
 
   /*output = */Object.assign(output, value.fields);
-  const endIndex: number = serializeInto(buf, output, false, index, depth + 1, serializeFunctions, false, null);
+  // const endIndex: number = serializeInto(buf, output, false, index, depth + 1, serializeFunctions, false, null);
+    const endIndex: number = serializeInto(buf, output, index, {...options, checkKeys: false, depth: options.depth + 1, ignoreUndefined:false, path: null});
 
   // Calculate object size
   const size = endIndex - startIndex;
@@ -768,18 +790,36 @@ index += encodedKey.byteLength;
   return endIndex;
 }
 
+export interface SerializationOptions {
+  depth?: number;
+  checkKeys?: boolean;
+  serializeFunctions?: boolean;
+  // Ignore / skip undefined values
+  ignoreUndefined?: boolean;
+  // If !ignoreUndefined serialize undefined as null or undefined
+    undefinedAsNull?: boolean;
+  path?: { [key:string]: any}[];
+  minInternalBufferSize?:number;
+}
+
 export function serializeInto(
   buf: Uint8Array,
   object: { [key:string]: any},
-  checkKeys: boolean,
-  startingIndex: number,
-  depth: number,
-  serializeFunctions: boolean,
-  ignoreUndefined: boolean,
-  path: { [key:string]: any}[]
+  offset: number = 0,
+  options: SerializationOptions = {}
+  // checkKeys: boolean,
+  // startingIndex: number,
+  // depth: number,
+  // serializeFunctions: boolean,
+  // ignoreUndefined: boolean,
+  // path: { [key:string]: any}[],
+  // undefinedAsNull: boolean
 ): number {
-  startingIndex = startingIndex || 0;
-  path = path || [];
+  options = { depth: 0, checkKeys: false, serializeFunctions: false, ignoreUndefined: true, undefinedAsNull: true, path: [],
+    ...options}
+  
+  let startingIndex: number = offset
+  const path: any[] = options.path || [];
 
   // Push the object to the path
   path.push(object);
@@ -810,9 +850,9 @@ export function serializeInto(
         index = serializeBoolean(buf, key, value, index/*, true*/);
       } else if (value instanceof Date ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index/*, true*/);
-      } else if (value === undefined) {
-        index = serializeNull(buf, key, value, index/*, true*/);
-      } else if (value === null) {
+      } else if (value === undefined && !options.ignoreUndefined && !options.undefinedAsNull) {
+        index = serializeUndefined(buf, key, value, index/*, true*/);
+      } else if (value === null || value === undefined && !options.ignoreUndefined && options.undefinedAsNull) {
         index = serializeNull(buf, key, value, index/*, true*/);
       } else if (bsontype === 'ObjectId' || bsontype === 'ObjectID') {
         index = serializeObjectId(buf, key, value, index/*, true*/);
@@ -826,12 +866,13 @@ export function serializeInto(
           key,
           value,
           index,
-          checkKeys,
+          options
+        /*  checkKeys,
           depth,
           serializeFunctions,
           ignoreUndefined,
           true,
-          path
+          path*/
         );
       } else if (type === 'object' && bsontype === 'Decimal128') {
         index = serializeDecimal128(buf, key, value, index/*, true*/);
@@ -839,7 +880,7 @@ export function serializeInto(
         index = serializeLong(buf, key, value, index/*, true*/);
       } else if (bsontype === 'Double') {
         index = serializeDouble(buf, key, value, index/*, true*/);
-      } else if (typeof value === 'function' && serializeFunctions) {
+      } else if (typeof value === 'function' && options.serializeFunctions) {
         index = serializeFunction(
           buf,
           key,
@@ -856,18 +897,19 @@ export function serializeInto(
           key,
           value,
           index,
-          checkKeys,
+          options
+        /*  checkKeys,
           depth,
           serializeFunctions,
           ignoreUndefined,
-          true
+          true*/
         );
       } else if (bsontype === 'Binary') {
         index = serializeBinary(buf, key, value, index/*, true*/);
       } else if (bsontype === 'Symbol') {
         index = serializeSymbol(buf, key, value, index/*, true*/);
       } else if (bsontype === 'DBRef') {
-        index = serializeDBRef(buf, key, value, index, depth, serializeFunctions/*, true*/);
+        index = serializeDBRef(buf, key, value, index, options /*depth, serializeFunctions/*, true*/);
       } else if (bsontype === 'BSONRegExp') {
         index = serializeBSONRegExp(buf, key, value, index/*, true*/);
       } else if (bsontype === 'Int32') {
@@ -905,7 +947,7 @@ export function serializeInto(
           throw Error(`Key ${key} must not contain null bytes.`);
         }
 
-        if (checkKeys) {
+        if (options.checkKeys) {
           if ('$' === key[0]) {
             throw Error(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
@@ -922,8 +964,10 @@ export function serializeInto(
         index = serializeBoolean(buf, key, value, index);
       } else if (value instanceof Date  ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index);
-      } else if (value === null || (value === undefined && ignoreUndefined === false)) {
-        index = serializeNull(buf, key, value, index);
+      }  else if (value === undefined && !options.ignoreUndefined && !options.undefinedAsNull) {
+        index = serializeUndefined(buf, key, value, index/*, true*/);
+      } else if (value === null || value === undefined && !options.ignoreUndefined && options.undefinedAsNull) {
+        index = serializeNull(buf, key, value, index/*, true*/);
       } else if (bsontype === 'ObjectId' || bsontype === 'ObjectID') {
         index = serializeObjectId(buf, key, value, index);
       } else if (/*Buffer.isBuffer(value)*/ value instanceof Uint8Array) {
@@ -936,12 +980,13 @@ export function serializeInto(
           key,
           value,
           index,
-          checkKeys,
+          options
+        /*  checkKeys,
           depth,
           serializeFunctions,
           ignoreUndefined,
           false,
-          path
+          path*/
         );
       } else if (type === 'object' && bsontype === 'Decimal128') {
         index = serializeDecimal128(buf, key, value, index);
@@ -955,20 +1000,21 @@ export function serializeInto(
           key,
           value,
           index,
-          checkKeys,
+          options
+        /*  checkKeys,
           depth,
           serializeFunctions,
           ignoreUndefined,
-          false
+          false*/
         );
-      } else if (typeof value === 'function' && serializeFunctions) {
+      } else if (typeof value === 'function' && options.serializeFunctions) {
         index = serializeFunction(buf, key, value, index/*, checkKeys, depth, serializeFunctions*/);
       } else if (bsontype === 'Binary') {
         index = serializeBinary(buf, key, value, index);
       } else if (bsontype === 'Symbol') {
         index = serializeSymbol(buf, key, value, index);
       } else if (bsontype === 'DBRef') {
-        index = serializeDBRef(buf, key, value, index, depth, serializeFunctions);
+        index = serializeDBRef(buf, key, value, index, options/*, depth, serializeFunctions*/);
       } else if (bsontype === 'BSONRegExp') {
         index = serializeBSONRegExp(buf, key, value, index);
       } else if (bsontype === 'Int32') {
@@ -1010,7 +1056,7 @@ export function serializeInto(
           throw new TypeError(`Key ${key}  must not contain null bytes.`);
         }
 
-        if (checkKeys) {
+        if (options.checkKeys) {
           if ('$' === key[0]) {
             throw new TypeError(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
@@ -1027,10 +1073,10 @@ export function serializeInto(
         index = serializeBoolean(buf, key, value, index);
       } else if (value instanceof Date  ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index);
-      } else if (value === undefined) {
-        if (ignoreUndefined === false) {index = serializeNull(buf, key, value, index);}
-      } else if (value === null) {
-        index = serializeNull(buf, key, value, index);
+      }  else if (value === undefined && !options.ignoreUndefined && !options.undefinedAsNull) {
+        index = serializeUndefined(buf, key, value, index/*, true*/);
+      } else if (value === null || value === undefined && !options.ignoreUndefined && options.undefinedAsNull) {
+        index = serializeNull(buf, key, value, index/*, true*/);
       } else if (bsontype === 'ObjectId' || bsontype === 'ObjectID') {
         index = serializeObjectId(buf, key, value, index);
       } else if (value instanceof Uint8Array) {
@@ -1043,12 +1089,13 @@ export function serializeInto(
           key,
           value,
           index,
-          checkKeys,
+          options
+        /*  checkKeys,
           depth,
           serializeFunctions,
           ignoreUndefined,
           false,
-          path
+          path*/
         );
       } else if (type === 'object' && bsontype === 'Decimal128') {
         index = serializeDecimal128(buf, key, value, index);
@@ -1062,20 +1109,21 @@ export function serializeInto(
           key,
           value,
           index,
-          checkKeys,
+          options
+        /*  checkKeys,
           depth,
           serializeFunctions,
           ignoreUndefined,
-          false
+          false*/
         );
-      } else if (typeof value === 'function' && serializeFunctions) {
+      } else if (typeof value === 'function' && options.serializeFunctions) {
         index = serializeFunction(buf, key, value, index/*, checkKeys, depth, serializeFunctions*/);
       } else if (bsontype === 'Binary') {
         index = serializeBinary(buf, key, value, index);
       } else if (bsontype === 'Symbol') {
         index = serializeSymbol(buf, key, value, index);
       } else if (bsontype === 'DBRef') {
-        index = serializeDBRef(buf, key, value, index, depth, serializeFunctions);
+        index = serializeDBRef(buf, key, value, index, options/* depth, serializeFunctions*/);
       } else if (bsontype === 'BSONRegExp') {
         index = serializeBSONRegExp(buf, key, value, index);
       } else if (bsontype === 'Int32') {

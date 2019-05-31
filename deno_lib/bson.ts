@@ -18,7 +18,7 @@
 // const constants = require('./constants');
 // const EJSON = require('./extended_json');
 import { deserialize } from "./parser/deserializer.ts"
-import { serializeInto } from "./parser/serializer.ts"
+import { SerializationOptions, serializeInto as _serializeInto } from "./parser/serializer.ts"
 import { calculateSize } from "./parser/calculate_size.ts"
 
 export {
@@ -80,6 +80,7 @@ export { EJSON} from "./extended_json.ts"
 // const ensureBuffer = require('./ensure_buf');
 
 export {deserialize} from "./parser/deserializer.ts"
+export { SerializationOptions } from "./parser/serializer.ts"
 
 
 
@@ -101,7 +102,7 @@ export function setInternalBufferSize(size: number): void {
 }
 
 /** Serializes a Javascript object. */
-export function serialize(object: { [key:string]: any}, options: { checkKeys?: boolean, serializeFunctions?:boolean, ignoreUndefined?:boolean, minInternalBufferSize?:number} = {checkKeys:false, serializeFunctions:false,ignoreUndefined:true, minInternalBufferSize:MAXSIZE}): Uint8Array {
+export function serialize(object: { [key:string]: any}, options:SerializationOptions = { depth: 0, checkKeys: false, serializeFunctions: false, ignoreUndefined: true, undefinedAsNull: true, path: [], minInternalBufferSize: MAXSIZE}): Uint8Array {
   // options = options || {};
   // // Unpack the options
   // const checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
@@ -119,15 +120,19 @@ export function serialize(object: { [key:string]: any}, options: { checkKeys?: b
   // }
 
   // Attempt to serialize
-  const serializationIndex: number = serializeInto(
+  const serializationIndex: number = _serializeInto(
     buf,
     object,
+    0,
+    options
+    /*
     options.checkKeys,
     0,
     0,
     options.serializeFunctions,
     options.ignoreUndefined,
     []
+    */
   );
 
   // // Create the final buf
@@ -146,7 +151,7 @@ export function serialize(object: { [key:string]: any}, options: { checkKeys?: b
  * Serialize a Javascript object using a predefined Buffer and index into the
  * buf, useful when pre-allocating the space for serialization.
  */
-export function serializeWithBufferAndIndex(object: any, out: Uint8Array, options: { checkKeys?: boolean, serializeFunctions?:boolean, ignoreUndefined?:boolean, index?:number} = {checkKeys:false, serializeFunctions:false,ignoreUndefined:true, index:0}): number {
+export function serializeInto(out: Uint8Array, object: any, offset: number = 0, options: SerializationOptions = { depth: 0, checkKeys: false, serializeFunctions: false, ignoreUndefined: true, undefinedAsNull: true, path: [], minInternalBufferSize: MAXSIZE}): number {
   if (out === null) {
     throw new TypeError("The output buffer must not be null.")
   }
@@ -160,18 +165,20 @@ export function serializeWithBufferAndIndex(object: any, out: Uint8Array, option
   // const startIndex = typeof options.index === 'number' ? options.index : 0;
 
   // Rename internally for my own sanity, maybe rename API too
-  const offset: number = options.index;
+  // const offset: number = options.index;
 
   // Attempt to serialize
-  const serializationIndex: number = serializeInto(
+  const serializationIndex: number = _serializeInto(
     buf,
     object,
-    options.checkKeys,
+    0,
+    options
+  /*  options.checkKeys,
     0,
     0,
     options.serializeFunctions,
     options.ignoreUndefined,
-    null
+    null*/
   );
   // buf.copy(finalBuffer, startIndex, 0, serializationIndex);
 out.subarray(offset).set(buf.subarray(0, serializationIndex))

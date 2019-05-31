@@ -20,6 +20,7 @@ import { Long } from "./long/mod.ts"
 import { Double } from "./double.ts"
 import { Timestamp } from "./timestamp.ts"
 import {ObjectId } from "./object_id.ts"
+import { DateTime } from "./datetime.ts"
 import {BSONRegExp} from "./regexp.ts"
 import {BSONSymbol} from "./symbol.ts"
 import {Int32} from "./int32.ts"
@@ -30,6 +31,7 @@ import {MaxKey} from "./max_key.ts"
 import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
 import { BSON_INT32_MIN, BSON_INT32_MAX, BSON_INT64_MIN, BSON_INT64_MAX} from "./constants.ts"
+import { encode} from "./transcoding.ts"
 // /**
 //  * @namespace EJSON
 //  */
@@ -47,13 +49,18 @@ const keysToCodecs: { [key:string]: any} = {
   $minKey: MinKey,
   $maxKey: MaxKey,
   $regularExpression: BSONRegExp,
-  $timestamp: Timestamp
+  $timestamp: Timestamp,
+  $date: DateTime
 };
 
+interface ParseOptions {
+  promoteValues: boolean;
+}
+
 /** Deserializes a value from its extended JSON representation. */
-function deserializeValue(/*self:any, key: string, */value: any, options: {relaxed: boolean, strict?: boolean} = { relaxed: true, strict: false }): any {
+function deserializeValue(/*self:any, key: string, */value: any, options: ParseOptions = { promoteValues:true }): any {
   if (typeof value === 'number') {
-    if (options.relaxed) {
+    if (options.promoteValues) {
       return value;
     }
     // if it's an integer, should interpret as smallest BSON integer
@@ -68,53 +75,100 @@ function deserializeValue(/*self:any, key: string, */value: any, options: {relax
   // from here on out we're looking for bson types, so bail if its not an object
   if (value === null || typeof value !== 'object'){ return value;}
   // upgrade deprecated undefined to null
-  if (value.hasOwnProperty("$undefined")) {return null;}
+  if (value.hasOwnProperty("$undefined") && options.promoteValues) {return null;}
   // Find this values codec
   const codecKey:  string = Object.keys(value)
     .find((k : string): boolean => k.startsWith('$') && value[k] && keysToCodecs[k])
     // .find()
   // const codec: Function =
   if (codecKey) {
+      if (options.promoteValues) {
+        if (codecKey === "$symbol") {
+          // symbol is deprecated - return as string
+          return value[codecKey];
+        } else if (codecKey === "$regularExpression") {
+          return new RegExp(value[codecKey].pattern, value[codecKey].options)
+        } else if (codecKey === "$binary") {
+          return encode(value[codecKey].base64, "base64")
+        } else if (codecKey === "$date") {
+          const time: string = value[codecKey].$numberLong
+          if (time.length < 16) {
+            // far lt 2^53 - safe to parse as number
+            return new Date(parseInt(time))
+          } else {
+            // it is a real long - using DateTime to not loose precision
+            return new DateTime(time)
+          }
+        }
+      }
+
     const codec: any = keysToCodecs[codecKey]
     return codec.fromExtendedJSON(value, options)
   }
+  
+  if (value.hasOwnProperty("$code")) {
+      let copy: any = Object.assign({}, value);
+      if (value.$scope) {
+        copy.$scope = deserializeValue(/*self, null, */value.$scope);
+      }
+      return Code.fromExtendedJSON(copy);
+    }
+    
+    if (value.hasOwnProperty("$ref") || value.hasOwnProperty("$dbPointer")) {
+      let v: unknown = value.hasOwnProperty("$ref") ? value : value.$dbPointer!;
+      // we run into this in a "degenerate EJSON" case (with $id and $ref order flipped)
+      // because of the order JSON.parse goes through the document
+      if (v instanceof DBRef) {return v;}
+      // const dollarKeys: string[] = Object.keys(v).filter(k => k.startsWith('$'))
+      if (v instanceof Object) {
+        const valid: boolean = Object.keys(v)
+        .filter(k => k.startsWith('$'))
+          .reduce((acc, k): number => k === "$ref" || k === "$id" || k === "$db" ? ++acc : --acc, 0) === 3;
+      // let valid: boolean = true;
+      // dollarKeys.forEach((k: string): void => {
+      //   if (['$ref', '$id', '$db'].indexOf(k) === -1){ valid = false;}
+      // });
+      // only make DBRef if $ keys are all valid
+      if (valid) {return DBRef.fromExtendedJSON(v);}
+      }
+    }
   // for (const key of keys) {
   //   let c: any = keysToCodecs[key];
   //   if (c){ return c.fromExtendedJSON(value, options);}
   // }
-  if (value.hasOwnProperty("$date")) {
-    const d: number| string | Long = value.$date!;
-    const date: Date = new Date();
-    if (typeof d === 'string') {date.setTime(Date.parse(d));}
-    else if (Long.isLong(d)){ date.setTime((d as Long).toNumber());}
-    else if (typeof d === 'number' && options.relaxed){ date.setTime(d);}
-    return date;
-  }
-  if (value.hasOwnProperty("$code")) {
-    let copy: any = Object.assign({}, value);
-    if (value.hasOwnProperty("$scope")) {
-      copy.$scope = deserializeValue(/*self, null, */value.$scope!);
-    }
-    return Code.fromExtendedJSON(copy);
-  }
-  if (value.hasOwnProperty("$ref") || value.hasOwnProperty("$dbPointer")) {
-    let v: unknown = value.hasOwnProperty("$ref") ? value : value.$dbPointer!;
-    // we run into this in a "degenerate EJSON" case (with $id and $ref order flipped)
-    // because of the order JSON.parse goes through the document
-    if (v instanceof DBRef) {return v;}
-    // const dollarKeys: string[] = Object.keys(v).filter(k => k.startsWith('$'))
-    if (v instanceof Object) {
-      const valid: boolean = Object.keys(v)
-      .filter(k => k.startsWith('$'))
-        .reduce((acc, k): number => k === "$ref" || k === "$id" || k === "$db" ? ++acc : --acc, 0) === 3;
-    // let valid: boolean = true;
-    // dollarKeys.forEach((k: string): void => {
-    //   if (['$ref', '$id', '$db'].indexOf(k) === -1){ valid = false;}
-    // });
-    // only make DBRef if $ keys are all valid
-    if (valid) {return DBRef.fromExtendedJSON(v);}
-    }
-  }
+  // if (value.hasOwnProperty("$date")) {
+  //   const d: number| string | Long = value.$date!;
+  //   const date: Date = new Date();
+  //   if (typeof d === 'string') {date.setTime(Date.parse(d));}
+  //   else if (Long.isLong(d)){ date.setTime((d as Long).toNumber());}
+  //   else if (typeof d === 'number' && options.promoteValues){ date.setTime(d);}
+  //   return date;
+  // }
+  // if (value.hasOwnProperty("$code")) {
+  //   let copy: any = Object.assign({}, value);
+  //   if (value.hasOwnProperty("$scope")) {
+  //     copy.$scope = deserializeValue(/*self, null, */value.$scope!);
+  //   }
+  //   return Code.fromExtendedJSON(copy);
+  // }
+  // if (value.hasOwnProperty("$ref") || value.hasOwnProperty("$dbPointer")) {
+  //   let v: unknown = value.hasOwnProperty("$ref") ? value : value.$dbPointer!;
+  //   // we run into this in a "degenerate EJSON" case (with $id and $ref order flipped)
+  //   // because of the order JSON.parse goes through the document
+  //   if (v instanceof DBRef) {return v;}
+  //   // const dollarKeys: string[] = Object.keys(v).filter(k => k.startsWith('$'))
+  //   if (v instanceof Object) {
+  //     const valid: boolean = Object.keys(v)
+  //     .filter(k => k.startsWith('$'))
+  //       .reduce((acc, k): number => k === "$ref" || k === "$id" || k === "$db" ? ++acc : --acc, 0) === 3;
+  //   // let valid: boolean = true;
+  //   // dollarKeys.forEach((k: string): void => {
+  //   //   if (['$ref', '$id', '$db'].indexOf(k) === -1){ valid = false;}
+  //   // });
+  //   // only make DBRef if $ keys are all valid
+  //   if (valid) {return DBRef.fromExtendedJSON(v);}
+  //   }
+  // }
   return value;
 }
 
@@ -122,11 +176,11 @@ function deserializeValue(/*self:any, key: string, */value: any, options: {relax
  * Parse an Extended JSON string, constructing the JavaScript value or object described by that
  * string.
  */
- function parse(text: string, options: { relaxed: boolean, strict?: boolean} = { relaxed: true, strict: false }): any {
-  options = Object.assign({}, { relaxed: true }, options || {});
-  // relaxed implies not strict
-  if (typeof options.relaxed === 'boolean') {options.strict = !options.relaxed;}
-  if (typeof options.strict === 'boolean') {options.relaxed = !options.strict;}
+ function parse(text: string, options: ParseOptions = { promoteValues: true }): any {
+  // options = Object.assign({}, { relaxed: true }, options || {});
+  // // relaxed implies not strict
+  // if (typeof options.relaxed === 'boolean') {options.strict = !options.relaxed;}
+  // if (typeof options.strict === 'boolean') {options.relaxed = !options.strict;}
   return JSON.parse(text, (_: string, value: any): any => deserializeValue(/*this, key, */value, options));
 }
 
@@ -175,7 +229,7 @@ function serialize(bson: any, options:{ relaxed: boolean} = { relaxed: true}): a
  * Deserializes an Extended JSON object into a plain JavaScript object with
  * native/BSON types.
  */
-function deserialize(ejson: { [key:string]: any}, options: { relaxed: boolean, strict?: boolean} = { relaxed: true, strict: false }): any {
+function deserialize(ejson: { [key:string]: any}, options: ParseOptions = { promoteValues: true }): any {
   return parse(JSON.stringify(ejson), options);
 }
 
