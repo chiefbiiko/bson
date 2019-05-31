@@ -4,6 +4,7 @@ import { Long } from "./long/mod.ts"
 import { Double } from "./double.ts"
 import { Timestamp } from "./timestamp.ts"
 import {ObjectId } from "./object_id.ts"
+import { DateTime } from "./datetime.ts"
 // import {BSONRegExp} from "./regexp.ts"
 // import {BSONSymbol} from "./symbol.ts"
 // import {Int32} from "./int32.ts"
@@ -13,7 +14,7 @@ import {MinKey} from "./min_key.ts"
 import {MaxKey} from "./max_key.ts"
 import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
-import { serialize, deserialize, serializeInto, calculateObjectSize } from "./bson.ts"
+import { serialize, deserialize, serializeInto, calculateObjectSize, BSON_INT32_MAX } from "./bson.ts"
 import { encode, decode} from "./transcoding.ts"
 
 
@@ -626,23 +627,18 @@ test({
   }
 });
 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize Number 4', function(done) {
-//   var doc = { doc: BSON.BSON_INT32_MAX + 10 };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var deserialized = BSON.deserialize(serialized_data);
-//   // expect(deserialized.doc instanceof Binary).to.be.ok;
-//   expect(BSON.BSON_INT32_MAX + 10).to.equal(deserialized.doc);
-//   done();
-// });
-// 
+test({
+  name: 'serialize and deserialize number 4', fn():void {
+    const expected_doc: {[key:string]: any} = { num: BSON_INT32_MAX + 10 };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
 // /**
 //  * @ignore
 //  */
@@ -662,184 +658,126 @@ test({
 //   expect(doc.doc[3]).to.equal(deserialized.doc[3]);
 //   done();
 // });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should correctly deserialize a nested object', function(done) {
-//   var doc = { doc: { doc: 1 } };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   expect(doc.doc.doc).to.deep.equal(BSON.deserialize(serialized_data).doc.doc);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize A Boolean', function(done) {
-//   var doc = { doc: true };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   expect(doc.doc).to.equal(BSON.deserialize(serialized_data).doc);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize a Date', function(done) {
-//   var date = new Date();
-//   //(2009, 11, 12, 12, 00, 30)
-//   date.setUTCDate(12);
-//   date.setUTCFullYear(2009);
-//   date.setUTCMonth(11 - 1);
-//   date.setUTCHours(12);
-//   date.setUTCMinutes(0);
-//   date.setUTCSeconds(30);
-//   var doc = { doc: date };
-//   var serialized_data = BSON.serialize(doc);
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-// 
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc1 = BSON.deserialize(serialized_data);
-//   expect(doc).to.deep.equal(doc1);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize a Date from another VM', function(done) {
-//   var script = 'date1 = new Date();',
-//     ctx = vm.createContext({
-//       date1: null
-//     });
-//   vm.runInContext(script, ctx, 'myfile.vm');
-// 
-//   var date = ctx.date1;
-//   //(2009, 11, 12, 12, 00, 30)
-//   date.setUTCDate(12);
-//   date.setUTCFullYear(2009);
-//   date.setUTCMonth(11 - 1);
-//   date.setUTCHours(12);
-//   date.setUTCMinutes(0);
-//   date.setUTCSeconds(30);
-//   var doc = { doc: date };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-//   expect(doc.date).to.equal(BSON.deserialize(serialized_data).doc.date);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize nested doc', function(done) {
-//   var doc = {
-//     string: 'Strings are great',
-//     decimal: 3.14159265,
-//     bool: true,
-//     integer: 5,
-// 
-//     subObject: {
-//       moreText: 'Bacon ipsum dolor.',
-//       longKeylongKeylongKeylongKeylongKeylongKey: 'Pork belly.'
-//     },
-// 
-//     subArray: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-//     anotherString: 'another string'
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize Oid', function(done) {
-//   var doc = { doc: new ObjectId() };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   expect(doc).to.deep.equal(BSON.deserialize(serialized_data));
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly encode Empty Hash', function(done) {
-//   var doc = {};
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   expect(doc).to.deep.equal(BSON.deserialize(serialized_data));
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize Ordered Hash', function(done) {
-//   var doc = { doc: { b: 1, a: 2, c: 3, d: 4 } };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var decoded_hash = BSON.deserialize(serialized_data).doc;
-//   var keys = [];
-// 
-//   for (var name in decoded_hash) keys.push(name);
-//   expect(['b', 'a', 'c', 'd']).to.deep.equal(keys);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize Regular Expression', function(done) {
-//   // Serialize the regular expression
-//   var doc = { doc: /foobar/im };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc2 = BSON.deserialize(serialized_data);
-// 
-//   expect(doc.doc.toString()).to.deep.equal(doc2.doc.toString());
-//   done();
-// });
-// 
+
+test({
+  name: 'serialize and deserialize a nested object', fn():void {
+    const expected_doc: {[key:string]: any} = { sub: { terrain: 0 } };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize a boolean', fn(): void {
+    const expected_doc: {[key:string]: any} = { truth: false };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialized js date deserializes as datetime - always', fn(): void {
+    const date: Date = new Date();
+    date.setUTCDate(12);
+    date.setUTCFullYear(2009);
+    date.setUTCMonth(11 - 1);
+    date.setUTCHours(12);
+    date.setUTCMinutes(0);
+    date.setUTCSeconds(30);
+    date.setUTCMilliseconds(166)
+    const ms: string = "1258027230166"
+    const input_doc: {[key:string]: any} = { date };
+    const expected_doc: {[key:string]: any} = { date: new DateTime(ms) };
+    const bson: Uint8Array = serialize(input_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc.date.toString(), expected_doc.date.toString())
+    const buf: Uint8Array = new Uint8Array(bson.byteLength)
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+
+test({
+  name: 'serialize and deserialize another nested doc', fn():void {
+    const expected_doc: { [key:string]: any} = {
+      string: 'Strings are great',
+      decimal: 3.14159265,
+      bool: true,
+      integer: 5,
+      subObject: {
+        moreText: 'Bacon ipsum dolor.',
+        longKeylongKeylongKeylongKeylongKeylongKey: 'Pork belly.'
+      },
+      subArray: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      anotherString: 'another string'
+    };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize object id', fn():void {
+    const expected_doc: {[key:string]: any} = { whoami: new ObjectId() };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize empty doc', fn():void {
+    const expected_doc: {[key:string]: any} = { };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize ordered hash', fn():void {
+    const expected_doc: {[key:string]: any} = { b: 1, a: 2, d: 3, c:4 };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    assertEquals(Object.keys(doc).join(), Object.keys(expected_doc).join())
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize regular expression', fn():void {
+    const expected_doc: {[key:string]: any} = {rex: /fraud/im };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
 // /**
 //  * @ignore
 //  */
