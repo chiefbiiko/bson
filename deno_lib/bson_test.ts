@@ -1049,267 +1049,195 @@ test({
   }
 });
 
-// /**
-//  * @ignore
-//  */
-// it('Should handle complicated all typed object', function(done) {
-//   // First doc
-//   var date = new Date();
-//   var oid = new ObjectId();
-//   var string = 'binstring';
-//   var bin = new Binary();
-//   for (var index = 0; index < string.length; index++) {
-//     bin.put(string.charAt(index));
-//   }
-// 
-//   var doc = {
-//     string: 'hello',
-//     array: [1, 2, 3],
-//     hash: { a: 1, b: 2 },
-//     date: date,
-//     oid: oid,
-//     binary: bin,
-//     int: 42,
-//     float: 33.3333,
-//     regexp: /regexp/,
-//     boolean: true,
-//     long: date.getTime(),
-//     where: new Code('this.a > i', { i: 1 }),
-//     dbref: new DBRef('namespace', oid, 'integration_tests_')
-//   };
-// 
-//   // Second doc
-//   oid = ObjectId.createFromHexString(oid.toHexString());
-//   string = 'binstring';
-//   bin = new Binary();
-//   for (index = 0; index < string.length; index++) {
-//     bin.put(string.charAt(index));
-//   }
-// 
-//   var doc2 = {
-//     string: 'hello',
-//     array: [1, 2, 3],
-//     hash: { a: 1, b: 2 },
-//     date: date,
-//     oid: oid,
-//     binary: bin,
-//     int: 42,
-//     float: 33.3333,
-//     regexp: /regexp/,
-//     boolean: true,
-//     long: date.getTime(),
-//     where: new Code('this.a > i', { i: 1 }),
-//     dbref: new DBRef('namespace', oid, 'integration_tests_')
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-// 
-//   expect(serialized_data).to.deep.equal(serialized_data2);
-// 
-//   serialized_data2 = BSON.serialize(doc2, false, true);
-// 
-//   expect(serialized_data).to.deep.equal(serialized_data2);
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize Complex Nested Object', function(done) {
-//   var doc = {
-//     email: 'email@email.com',
-//     encrypted_password: 'password',
-//     friends: ['4db96b973d01205364000006', '4dc77b24c5ba38be14000002'],
-//     location: [72.4930088, 23.0431957],
-//     name: 'Amit Kumar',
-//     password_salt: 'salty',
-//     profile_fields: [],
-//     username: 'amit',
-//     _id: new ObjectId()
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc2 = doc;
-//   doc2._id = ObjectId.createFromHexString(doc2._id.toHexString());
-//   serialized_data2 = BSON.serialize(doc2, false, true);
-// 
-//   for (var i = 0; i < serialized_data2.length; i++) {
-//     require('assert').equal(serialized_data2[i], serialized_data[i]);
-//   }
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should correctly massive doc', function(done) {
-//   var oid1 = new ObjectId();
-//   var oid2 = new ObjectId();
-// 
-//   var b = BSON;
-// 
-//   // JS doc
-//   var doc = {
-//     dbref2: new DBRef('namespace', oid1, 'integration_tests_'),
-//     _id: oid2
-//   };
-// 
-//   var doc2 = {
-//     dbref2: new DBRef(
-//       'namespace',
-//       ObjectId.createFromHexString(oid1.toHexString()),
-//       'integration_tests_'
-//     ),
-//     _id: ObjectId.createFromHexString(oid2.toHexString())
-//   };
-// 
-//   var serialized_data = b.serialize(doc);
-//   var serialized_data2 = Buffer.alloc(b.calculateObjectSize(doc));
-//   b.serializeWithBufferAndIndex(doc, serialized_data2);
-//   expect(serialized_data).to.deep.equal(serialized_data2);
-// 
-//   serialized_data2 = b.serialize(doc2, false, true);
-//   expect(serialized_data).to.deep.equal(serialized_data2);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize/Deserialize regexp object', function(done) {
-//   var doc = { b: /foobaré/ };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   serialized_data2 = BSON.serialize(doc);
-// 
-//   for (var i = 0; i < serialized_data2.length; i++) {
-//     require('assert').equal(serialized_data2[i], serialized_data[i]);
-//   }
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize/Deserialize complicated object', function(done) {
-//   var doc = { a: { b: { c: [new ObjectId(), new ObjectId()] } }, d: { f: 1332.3323 } };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc2 = BSON.deserialize(serialized_data);
-// 
-//   expect(doc).to.deep.equal(doc2);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize/Deserialize nested object', function(done) {
-//   var doc = {
-//     _id: { date: new Date(), gid: '6f35f74d2bea814e21000000' },
-//     value: {
-//       b: { countries: { '--': 386 }, total: 1599 },
-//       bc: { countries: { '--': 3 }, total: 10 },
-//       gp: { countries: { '--': 2 }, total: 13 },
-//       mgc: { countries: { '--': 2 }, total: 14 }
-//     }
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc2 = BSON.deserialize(serialized_data);
-// 
-//   expect(doc).to.deep.equal(doc2);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize/Deserialize nested object with even more nesting', function(done) {
-//   var doc = {
-//     _id: { date: { a: 1, b: 2, c: new Date() }, gid: '6f35f74d2bea814e21000000' },
-//     value: {
-//       b: { countries: { '--': 386 }, total: 1599 },
-//       bc: { countries: { '--': 3 }, total: 10 },
-//       gp: { countries: { '--': 2 }, total: 13 },
-//       mgc: { countries: { '--': 2 }, total: 14 }
-//     }
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc2 = BSON.deserialize(serialized_data);
-//   expect(doc).to.deep.equal(doc2);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize empty name object', function(done) {
-//   var doc = {
-//     '': 'test',
-//     bbbb: 1
-//   };
-//   var serialized_data = BSON.serialize(doc);
-//   var doc2 = BSON.deserialize(serialized_data);
-//   expect(doc2['']).to.equal('test');
-//   expect(doc2['bbbb']).to.equal(1);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly handle Forced Doubles to ensure we allocate enough space for cap collections', function(done) {
-//   if (Double != null) {
-//     var doubleValue = new Double(100);
-//     var doc = { value: doubleValue };
-// 
-//     // Serialize
-//     var serialized_data = BSON.serialize(doc);
-// 
-//     var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//     BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//     assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//     var doc2 = BSON.deserialize(serialized_data);
-//     expect({ value: 100 }).to.deep.equal(doc2);
-//   }
-// 
-//   done();
-// });
-// 
+test({name:
+  'serialize and deserialize complicated all typed object', fn():void {
+    const date: Date = new Date();
+    const oid: ObjectId = new ObjectId();
+     const bin: Uint8Array = encode("binstring", "utf8")
+    const input_doc: {[key:string]: any} = {
+      string: 'hello',
+      array: [1, 2, 3],
+      hash: { a: 1, b: 2 },
+      date: date,
+      oid: oid,
+      binary: new Binary(bin),
+      int: 42,
+      float: 33.3333,
+      regexp: /regexp/,
+      boolean: true,
+      long: date.getTime(),
+      where: new Code('this.a > i', { i: 1 }),
+      dbref: new DBRef('namespace', oid, 'integration_tests_')
+    };
+    const expected_doc: {[key:string]: any} = {...input_doc, binary: bin}
+    let bson: Uint8Array = serialize(input_doc)
+    let doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+    bson = serialize(expected_doc)
+    doc =  deserialize(bson)
+        assertEquals(doc, expected_doc)
+        serializeInto(buf, doc)
+        assertEquals(buf, bson);
+  }})
+  
+
+
+test({ 
+  name: 'Should Correctly Serialize Complex Nested Object', fn():void {
+      const expected_doc: {[key:string]: any} = {
+      email: 'email@email.com',
+      encrypted_password: 'password',
+      friends: ['4db96b973d01205364000006', '4dc77b24c5ba38be14000002'],
+      location: [72.4930088, 23.0431957],
+      name: 'Amit Kumar',
+      password_salt: 'salty',
+      profile_fields: [],
+      username: 'amit',
+      _id: new ObjectId()
+    };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize cross references', fn():void {
+    const oid1: ObjectId = new ObjectId();
+    const oid2: ObjectId = new ObjectId();
+    const expected_doc1: {[key:string]: any}  = {
+      dbref: new DBRef('collection', oid2.toString("hex"), 'test'),
+      _id: oid1
+    };
+    const expected_doc2: {[key:string]: any}  = {
+      dbref: new DBRef( 'collection',   oid1.toString("hex"), 'test' ),
+      _id: ObjectId.fromHexString(oid2.toString("hex"))
+    };
+    const bson1: Uint8Array = serialize(expected_doc1)
+    const doc1: {[key:string]: any} = deserialize(bson1)
+    assertEquals(doc1.dbref, expected_doc1.dbref)
+        const buf: Uint8Array = new Uint8Array(bson1.byteLength)
+    serializeInto(buf, doc1)
+    assertEquals(buf, bson1);
+    const bson2: Uint8Array = serialize(expected_doc2)
+    const doc2: {[key:string]: any}  = deserialize(bson2)
+        assertEquals(doc2.dbref, expected_doc2.dbref)
+    serializeInto(buf, doc2)
+    assertEquals(buf, bson2);
+    assertEquals(doc1.dbref.oid.toString("hex"), doc2._id.toString("hex"))
+    assertEquals(doc2.dbref.oid.toString("hex"), doc1._id.toString("hex"))
+  }
+});
+
+test({name: 'serialize and deserialize regexp with special chars', fn():void {
+    const expected_doc: {[key:string]: any}  = { b: /foobaré/ };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+}});
+
+test({name:'serialize and deserialize complicated object', fn():void{
+  const expected_doc: {[key:string]: any}  = { a: { b: { c: [new ObjectId(), new ObjectId()] } }, d: { f: 1332.3323 } };
+  const bson: Uint8Array = serialize(expected_doc)
+  const doc: {[key:string]: any} = deserialize(bson)
+  assertEquals(doc, expected_doc)
+  const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+  serializeInto(buf, doc)
+  assertEquals(buf, bson);
+}});
+
+test({
+  name:'serialize and deserialize yet another nested object', fn():void {
+    const expected_doc: {[key:string]: any}  = {
+      _id: { date: new Date(), gid: '6f35f74d2bea814e21000000' },
+      value: {
+        b: { countries: { '--': 386 }, total: 1599 },
+        bc: { countries: { '--': 3 }, total: 10 },
+        gp: { countries: { '--': 2 }, total: 13 },
+        mgc: { countries: { '--': 2 }, total: 14 }
+      }
+    };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize nested object with even more nesting', fn():void {
+    const expected_doc: {[key:string]: any}  = {
+      _id: { date: { a: 1, b: 2, c: new Date() }, gid: '6f35f74d2bea814e21000000' },
+      value: {
+        b: { countries: { '--': 386 }, total: 1599 },
+        bc: { countries: { '--': 3 }, total: 10 },
+        gp: { countries: { '--': 2 }, total: 13 },
+        mgc: { countries: { '--': 2 }, total: 14 }
+      }
+    };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize empty name object', fn():void {
+      const expected_doc: {[key:string]: any}  = {
+      '': 'test',
+      bbbb: 1
+    };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+    assertEquals(doc[""], "test")
+    assertEquals(doc.bbbb, 1)
+  }
+});
+
+test({
+  name: 'serialized double desereializes as number by default', fn():void {
+    // if (Double != null) {
+        const input_doc: {[key:string]: any}  = { value: new Double(100)};
+      const expected_doc: {[key:string]: any}  = { value: 100};
+    const bson: Uint8Array = serialize(input_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(input_doc))
+    serializeInto(buf, input_doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'optionally deserializing double as double', fn():void {
+        const expected_doc: {[key:string]: any}  = { value: new Double(100)};
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson, { promoteValues: false})
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
 // /**
 //  * @ignore
 //  */
