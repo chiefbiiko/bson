@@ -767,15 +767,14 @@ index += encodedKey.byteLength;
   // return index;
 
   let startIndex: number = index;
-  let output: { [key: string]: any} = {
+  
+  const output: { [key: string]: any} = {
     $ref: value.collection || value.namespace, // "namespace" was what library 1.x called "collection"
     $id: value.oid
   };
-
   if (value.db) {
     output.$db = value.db;
   }
-
   /*output = */Object.assign(output, value.fields);
   // const endIndex: number = serializeAny(buf, output, false, index, depth + 1, serializeFunctions, false, null);
     const endIndex: number = serializeAny(buf, output, index, {...options, checkKeys: false, depth: options.depth + 1/*, ignoreUndefined:false*/, path: null});

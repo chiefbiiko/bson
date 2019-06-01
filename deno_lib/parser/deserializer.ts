@@ -593,7 +593,7 @@ function deserializeObject(buf: Uint8Array, offset: number, options: Deserializa
   if (!valid) {return object;}
 
   if (object.$id && object.$ref) {
-    const copy: { [key:string]:any } = Object.assign({}, object);
+    const copy: { [key:string]:any } = { ...object};
     delete copy.$ref;
     delete copy.$id;
     delete copy.$db;
@@ -664,7 +664,7 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
   // const index = options && options.index ? options.index : 0;
   // const offset: number = index
   // Read the document size
-  options = Object.assign({}, {
+  options = {
     evalFunctions : false,
     cacheFunctions: false,
     cacheFunctionsCrc32: false,
@@ -676,8 +676,9 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
     // bsonSymbol: false,
     allowObjectSmallerThanBufferSize: true,
     // offset: 0,
-    raw: false
-  },options)
+    raw: false,
+     ...options
+  }
   // const offset: number =0// options.offset;
   const size: number = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
 
