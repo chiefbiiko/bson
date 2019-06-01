@@ -17,8 +17,8 @@
 // const Binary = require('./binary');
 // const constants = require('./constants');
 // const EJSON = require('./extended_json');
-import { deserialize } from "./parser/deserializer.ts"
-import { SerializationOptions, serializeInto as _serializeInto } from "./parser/serializer.ts"
+import { DeserializationOptions, deserialize } from "./parser/deserializer.ts"
+import { SerializationOptions, serializeAny } from "./parser/serializer.ts"
 import { calculateSize } from "./parser/calculate_size.ts"
 
 export {
@@ -102,7 +102,7 @@ export function setInternalBufferSize(size: number): void {
 }
 
 /** Serializes a Javascript object. */
-export function serialize(object: { [key:string]: any}, options:SerializationOptions = { depth: 0, checkKeys: false, serializeFunctions: false,/* ignoreUndefined: true, undefinedAsNull: true,*/ path: [], minInternalBufferSize: MAXSIZE}): Uint8Array {
+export function serialize(object: any, options:SerializationOptions = { depth: 0, checkKeys: false, serializeFunctions: false,/* ignoreUndefined: true, undefinedAsNull: true,*/ path: [], minInternalBufferSize: MAXSIZE}): Uint8Array {
   // options = options || {};
   // // Unpack the options
   // const checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
@@ -120,7 +120,7 @@ export function serialize(object: { [key:string]: any}, options:SerializationOpt
   // }
 
   // Attempt to serialize
-  const serializationIndex: number = _serializeInto(
+  const serializationIndex: number = serializeAny(
     buf,
     object,
     0,
@@ -168,7 +168,7 @@ export function serializeInto(out: Uint8Array, object: any, offset: number = 0, 
   // const offset: number = options.index;
 
   // Attempt to serialize
-  const serializationIndex: number = _serializeInto(
+  const serializationIndex: number = serializeAny(
     buf,
     object,
     0,
@@ -263,58 +263,33 @@ export function calculateObjectSize(object:any, options: { serializeFunctions?: 
  * @param {Object} [options.bsonRegExp=false] return BSON regular expressions as BSONRegExp instances.
  * @return {Number} returns the next index in the buf after deserialization **x** numbers of documents.
  */
-export function deserializeStream(bson, startIndex, numberOfDocuments, documents, docStartIndex, options: {
-  // Evaluate functions in the BSON document scoped to the object deserialized?
-  evalFunctions?: boolean,
-  // Cache evaluated functions for reuse?
-  cacheFunctions?: boolean,
-  // Use a crc32 code for caching, otherwise use the string of the function.
-  cacheFunctionsCrc32?: boolean,
-  // Downgrade Long to Number if it's smaller than 53 bits
-  promoteLongs?: boolean,
-  // Deserializing a Binary will return it as a node.js Buffer instance.
-  promoteBuffers?: boolean,
-  // Deserializing will promote BSON values to their closest nodejs types.
-  promoteValues?: boolean,
-  // Allow to specify what fields we wish to return as unserialized raw buf.
-  fieldsAsRaw?: any,
-  // Return BSON regular expressions as BSONRegExp instances.
-  bsonRegExp?: boolean,
-  // Allows the buf to be larger than the parsed BSON object.
-  allowObjectSmallerThanBufferSize?: boolean
-} = {
-  evalFunctions:false,
-  cacheFunctions: false,
-  cacheFunctionsCrc32: false,
-  promoteLongs: true,
-  promoteBuffers: false,
-  promoteValues: false,
- fieldsAsRaw: null,
-  bsonRegExp: false,
-  allowObjectSmallerThanBufferSize: false
-}) {
+export function deserializeStream(bson: Uint8Array, bsonOffset: number=0, numberOfDocs: number=Infinity, docs: any[] = [], docsOffset:number = 0, options: DeserializationOptions = {}): {index: number, docs: any[]} {
   if (bson === null) {
     throw new TypeError("The input buffer must not be null.")
   }
   // options = Object.assign({ allowObjectSmallerThanBufferSize: true }, options);
   // data = ensureBuffer(data);
 
-  let index: number = startIndex;
+  let index: number = bsonOffset;
   // Loop over all documents
-  for (let i:number = 0; i < numberOfDocuments; i++) {
+  for (let i:number = 0; i < numberOfDocs; i++) {
     // Find size of the document
     const size: number =
       bson[index] | (bson[index + 1] << 8) | (bson[index + 2] << 16) | (bson[index + 3] << 24);
+      if (size === 0) {
+        break;
+      }
     // Update options with index
     // options.index = offset;
     // Parse the document at this point
-    documents[docStartIndex + i] = deserialize(bson, /*options*/ {...options, offset: index});
+    docs[docsOffset + i] = deserialize(bson.subarray(index), options/*options*/ /*{...options, offset: index}*/);
     // Adjust index by the document size
     index += size;
   }
 
   // Return object containing end index of parsing and list of documents
-  return index;
+  // return index;
+  return { index, docs }
 }
 
 

@@ -21,7 +21,7 @@ import { Double } from "./../double.ts"
 import { Timestamp } from "./../timestamp.ts"
 import {ObjectId } from "./../object_id.ts"
 import {BSONRegExp} from "./../regexp.ts"
-import {BSONSymbol} from "./../symbol.ts"
+// import {BSONSymbol} from "./../symbol.ts"
 import {Int32} from "./../int32.ts"
 import {Code} from "./../code.ts"
 import {Decimal128} from "./../decimal128.ts"
@@ -41,7 +41,7 @@ const JS_INT_MIN_LONG: Long = Long.fromNumber(CONSTANTS.JS_INT_MIN);
 
 const functionCache: { [key:string]: Function} = {};
 
-function deserializeObject(buf: Uint8Array, index: number, options: DeserializationOptions = {}, isArray: boolean= false):any {
+function deserializeObject(buf: Uint8Array, offset: number, options: DeserializationOptions = {}, isArray: boolean= false):any {
   // const evalFunctions = options['evalFunctions'] == null ? false : options['evalFunctions'];
   // const cacheFunctions = options['cacheFunctions'] == null ? false : options['cacheFunctions'];
   // const cacheFunctionsCrc32 =
@@ -64,6 +64,7 @@ function deserializeObject(buf: Uint8Array, index: number, options: Deserializat
   // const promoteValues = options['promoteValues'] == null ? true : options['promoteValues'];
 
   // Set the start index
+  let index: number = offset;
   let startIndex: number = index;
 
   // Validate that we have at least 4 bytes of buf
@@ -649,7 +650,7 @@ export interface DeserializationOptions {
   // Allows the buf to be larger than the parsed BSON object.
   allowObjectSmallerThanBufferSize?: boolean
   // Offset from which to start deserialization.
-  offset?: number,
+  // offset?: number,
   // Return raw bson buffer instead of parsing it?
   raw?: boolean
 }
@@ -673,16 +674,16 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
    fieldsAsRaw: null,
     // bsonRegExp: false,
     // bsonSymbol: false,
-    allowObjectSmallerThanBufferSize: false,
-    offset: 0,
+    allowObjectSmallerThanBufferSize: true,
+    // offset: 0,
     raw: false
   },options)
-  const offset: number = options.offset;
-  const size: number = buf[offset] | (buf[offset+ 1] << 8) | (buf[offset + 2] << 16) | (buf[offset + 3] << 24);
+  // const offset: number =0// options.offset;
+  const size: number = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
 
   if (size < 5) {
     ////////////////
-    console.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> buf", String(buf), "offset", offset)
+    // console.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> buf", String(buf), "offset", offset)
     //////////////////
     throw new TypeError(`bson size must be >= 5, is ${size}.`);
   }
@@ -695,19 +696,19 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
     throw new TypeError(`buf length ${buf.length} must === bson size ${size}.`);
   }
 
-  if (size + offset > buf.length) {
+  if (size  > buf.length) {
     throw new TypeError(
-      `bson size ${size} + index ${offset} must be <= buf length ${buf.byteLength}.`
+      `bson size ${size} must be <= buf length ${buf.byteLength}.`
     );
   }
 
   // Illegal end value
-  if (buf[offset + size - 1] !== 0) {
+  if (buf[size - 1] !== 0) {
     throw new TypeError("One object, sized correctly, with a spot for an EOO, but the EOO isn't 0x00.");
   }
 
   // Start deserializtion
-  return deserializeObject(buf, offset, options, isArray);
+  return deserializeObject(buf, 0, options, isArray);
 }
 
 // module.exports = deserialize;

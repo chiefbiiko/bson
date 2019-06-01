@@ -22,7 +22,7 @@ import { DBRef} from "./../db_ref.ts"
 import {Binary} from "./../binary.ts"
 import { DateTime } from "./../datetime.ts"
 // TODO: Get rid of below import with DataView
-// import { writeIEEE754 } from "./../float_parser.ts";
+import { writeIEEE754 } from "./../float_parser.ts";
 // import { Long } from "./../long/mod.ts";
 // import { Binary} from "./../binary.ts";
 import { normalizeFunctionString } from "./utils.ts"
@@ -410,7 +410,7 @@ function serializeObject(
 buf.set(encodedKey, index);
   index += encodedKey.byteLength;
   buf[index++] = 0;
-  const endIndex = serializeInto(
+  const endIndex = serializeAny(
     buf,
     value,
     index,
@@ -594,7 +594,7 @@ function serializeCode(
     index += codeSize + 4;
 
     // Serialize the scope value
-    const endIndex: number = serializeInto(
+    const endIndex: number = serializeAny(
       buf,
       value.scope,
       index,
@@ -777,8 +777,8 @@ index += encodedKey.byteLength;
   }
 
   /*output = */Object.assign(output, value.fields);
-  // const endIndex: number = serializeInto(buf, output, false, index, depth + 1, serializeFunctions, false, null);
-    const endIndex: number = serializeInto(buf, output, index, {...options, checkKeys: false, depth: options.depth + 1/*, ignoreUndefined:false*/, path: null});
+  // const endIndex: number = serializeAny(buf, output, false, index, depth + 1, serializeFunctions, false, null);
+    const endIndex: number = serializeAny(buf, output, index, {...options, checkKeys: false, depth: options.depth + 1/*, ignoreUndefined:false*/, path: null});
 
   // Calculate object size
   const size = endIndex - startIndex;
@@ -803,9 +803,9 @@ export interface SerializationOptions {
   minInternalBufferSize?:number;
 }
 
-export function serializeInto(
+export function serializeAny(
   buf: Uint8Array,
-  object: { [key:string]: any},
+  object: any,
   offset: number = 0,
   options: SerializationOptions = {}
   // checkKeys: boolean,
@@ -1166,4 +1166,4 @@ export function serializeInto(
 //   }
 // }
 
-// module.exports = serializeInto;
+// module.exports = serializeAny;

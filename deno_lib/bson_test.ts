@@ -13,7 +13,7 @@ import {MinKey} from "./min_key.ts"
 import {MaxKey} from "./max_key.ts"
 import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
-import { serialize, deserialize, serializeInto, calculateObjectSize, BSON_INT32_MAX, BSON_BINARY_SUBTYPE_BYTE_ARRAY, BSON_BINARY_SUBTYPE_USER_DEFINED, JS_INT_MAX, BSON_INT64_MAX } from "./bson.ts"
+import { serialize, serializeInto, deserialize, deserializeStream, calculateObjectSize, BSON_INT32_MAX, BSON_BINARY_SUBTYPE_BYTE_ARRAY, BSON_BINARY_SUBTYPE_USER_DEFINED, JS_INT_MAX, BSON_INT64_MAX } from "./bson.ts"
 import { encode } from "./transcoding.ts"
 
 test({
@@ -1452,22 +1452,22 @@ test({
 // //   expect('function').to.equal(typeof documents[0].func);
 // //   done();
 // // }
-// 
-// it('should properly deserialize multiple documents using deserializeStream', function() {
-//   const bson = BSON;
-//   const docs = [{ foo: 'bar' }, { foo: 'baz' }, { foo: 'quux' }];
-// 
-//   // Serialize the test data
-//   const serializedDocs = [];
-//   for (let i = 0; i < docs.length; i++) {
-//     serializedDocs[i] = bson.serialize(docs[i]);
-//   }
-//   const buf = Buffer.concat(serializedDocs);
-// 
-//   const parsedDocs = [];
-//   bson.deserializeStream(buf, 0, docs.length, parsedDocs, 0);
-// 
-//   docs.forEach((doc, i) => expect(doc).to.deep.equal(parsedDocs[i]));
-// });
+
+test({
+  name: 'deserialize multiple documents using deserializeStream', fn():void {
+    const expected_docs: {[key:string]: any}[] = [{ foo: 'bar' }, { foo: 'baz' }, { foo: 'quux' }];
+    // concat buffers :\
+    const bson_arr: Uint8Array[] = expected_docs.map((d: { [key:string]: any}): Uint8Array => serialize(d))
+    const size: number = bson_arr.reduce((acc, cur): number =>acc + cur.byteLength, 0)
+    let offset: number = 0
+    const bson: Uint8Array = new Uint8Array(size)
+    for (const b of bson_arr) {
+      bson.set(b, offset)
+      offset += b.byteLength;
+    }
+    const result: {index: number, docs: any[]} = deserializeStream(bson);
+    result.docs.forEach((doc:any, i: number): void => { assertEquals(doc, expected_docs[i]) })
+  }
+});
 
 runIfMain(import.meta, { parallel: true})
