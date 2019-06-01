@@ -107,13 +107,13 @@ export class ObjectId {
     if (id === null) {
       return false;
     }
-    if (id instanceof ObjectId || typeof id === "number") {
+    if (id instanceof ObjectId || typeof id === "number" && id >= 0 && id % 1 === 0 && !Number.isNaN(id) && Number.isFinite(id)) {
       return true;
     }
     if (typeof id === "string" && ObjectId.HEX_24.test(id)) {
       return true;
     }
-    if (id.length === 12) {
+    if (id instanceof Uint8Array && id.byteLength === 12) {
       return true;
     }
     return false;

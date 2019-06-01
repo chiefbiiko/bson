@@ -5,26 +5,28 @@ import { Double } from "./double.ts"
 import { Timestamp } from "./timestamp.ts"
 import {ObjectId } from "./object_id.ts"
 import { DateTime } from "./datetime.ts"
-// import {BSONRegExp} from "./regexp.ts"
-// import {BSONSymbol} from "./symbol.ts"
-// import {Int32} from "./int32.ts"
+import {BSONRegExp} from "./regexp.ts"
+import {Int32} from "./int32.ts"
 import {Code} from "./code.ts"
-// import {Decimal128} from "./decimal128.ts"
+import {Decimal128} from "./decimal128.ts"
 import {MinKey} from "./min_key.ts"
 import {MaxKey} from "./max_key.ts"
 import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
-import { serialize, deserialize, serializeInto, calculateObjectSize, BSON_INT32_MAX, BSON_BINARY_SUBTYPE_BYTE_ARRAY, BSON_BINARY_SUBTYPE_USER_DEFINED } from "./bson.ts"
-import { encode, decode} from "./transcoding.ts"
-
+import { serialize, deserialize, serializeInto, calculateObjectSize, BSON_INT32_MAX, BSON_BINARY_SUBTYPE_BYTE_ARRAY, BSON_BINARY_SUBTYPE_USER_DEFINED, JS_INT_MAX, BSON_INT64_MAX } from "./bson.ts"
+import { encode } from "./transcoding.ts"
 
 test({
-  name: 'convert object id to itself', 
-  fn():void {
-    const a: ObjectId = new ObjectId();
-    const b: ObjectId = new ObjectId(a);
-    assert(b.equals(a))
-    assertEquals(b, a)
+  name: 'calculate the bson size of a given javascript object', fn():void {
+    const doc : { [key:string]: any}= { a: 1, func: function() {} };
+    let size: number = calculateObjectSize(doc, {
+      serializeFunctions: false
+    });
+    assertEquals(size, 12)
+    size = calculateObjectSize(doc, {
+      serializeFunctions: true
+    });
+      assertEquals(size, 38)
   }
 });
 
@@ -700,26 +702,6 @@ test({
   }
 });
 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly Serialize and Deserialize Array with added on functions', function(done) {
-//   Array.prototype.toXml = function() {};
-//   var doc = { doc: [1, 2, 'a', 'b'] };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var deserialized = BSON.deserialize(serialized_data);
-//   expect(doc.doc[0]).to.equal(deserialized.doc[0]);
-//   expect(doc.doc[1]).to.equal(deserialized.doc[1]);
-//   expect(doc.doc[2]).to.equal(deserialized.doc[2]);
-//   expect(doc.doc[3]).to.equal(deserialized.doc[3]);
-//   done();
-// });
-
 test({
   name: 'serialize and deserialize a nested object', fn():void {
     const expected_doc: {[key:string]: any} = { sub: { terrain: 0 } };
@@ -738,6 +720,29 @@ test({
     const bson: Uint8Array = serialize(expected_doc)
     const doc: {[key:string]: any} = deserialize(bson)
     assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialize and deserialize dates lossless', fn():void{
+    const date : Date = new Date(Date.parse('2011-10-02T14:00:08.383Z'))
+    const expected_doc: {[key:string]: any}  = {
+      _id: new ObjectId('4e886e687ff7ef5e00000162'),
+            date,
+                  type: 2,
+      foreign: 'local',
+
+      links: [
+        'http://www.reddit.com/r/worldnews/comments/kybm0/uk_home_secretary_calls_for_the_scrapping_of_the/'
+      ]
+    };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+        assertEquals(doc.date.getTime(), expected_doc.date.getTime())
+    assertEquals(JSON.stringify(doc), JSON.stringify(expected_doc))
     const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
     serializeInto(buf, doc)
     assertEquals(buf, bson);
@@ -835,6 +840,60 @@ test({
 });
 
 test({
+  name: 'convert object id to itself', 
+  fn():void {
+    const a: ObjectId = new ObjectId();
+    const b: ObjectId = new ObjectId(a);
+    assert(b.equals(a))
+    assertEquals(b, a)
+  }
+});
+
+test({
+  name: 'ObjectId.fromHexString validates string input', fn():void {
+   assertThrows(():void => { ObjectId.fromHexString('00000000000000000000023') })
+  }
+});
+
+test({
+  name: 'ObjectId should correctly retrieve timestamp', fn():void {
+    const date: Date = new Date();
+    const oid: ObjectId = new ObjectId();
+assertEquals(Math.floor(date.getTime() / 1000), oid.getTimestamp().getTime() / 1000)
+  }
+});
+
+test({
+  name: 'ObjectId.isValid validates strings, Uint8Arrays, and ObjectIds', fn():void {
+    assert(!ObjectId.isValid(null))
+    assert(!ObjectId.isValid("invalid"))
+    assert(!ObjectId.isValid('zzzzzzzzzzzzzzzzzzzzzzzz'))
+            assert(!ObjectId.isValid(-1))
+                    assert(!ObjectId.isValid(2.2))
+                    assert(!ObjectId.isValid(NaN))
+                    assert(!ObjectId.isValid(Infinity))
+        assert(ObjectId.isValid(0))
+    assert(ObjectId.isValid('000000000000000000000000'))
+        assert(ObjectId.isValid(encode('000000000000000000000000', "hex")))
+    assert(ObjectId.isValid(new ObjectId(encode('thisis12char', "utf8"))))
+  }
+});
+
+test({
+  name: 'ObjectId equality check', fn():void {
+    const oid: ObjectId = new ObjectId();
+            assert(oid.equals(new ObjectId(oid.toString("hex"))))
+    assert(oid.equals(new ObjectId(oid.toString())))
+            assert(oid.equals(oid.toString("hex")))
+    assert(!oid.equals('1234567890abcdef12345678'))
+        assert(!oid.equals('zzzzzzzzzzzzzzzzzzzzzzzz'))
+    assert(!oid.equals('fraud'))
+        assert(!oid.equals(null))
+        assert(!oid.equals(undefined))
+  }
+});
+
+test({
   name: 'serialize and deserialize empty doc', fn():void {
     const expected_doc: {[key:string]: any} = { };
     const bson: Uint8Array = serialize(expected_doc)
@@ -847,8 +906,20 @@ test({
 });
 
 test({
+  name: 'serialize and deserialize doc with number keys', fn():void {
+    const expected_doc: {[key:string]: any} = { 1:1, 2:2 };
+    const bson: Uint8Array = serialize(expected_doc)
+    const doc: {[key:string]: any} = deserialize(bson)
+    assertEquals(doc, expected_doc)
+    const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+    serializeInto(buf, doc)
+    assertEquals(buf, bson);
+  }
+});
+
+test({
   name: 'serialize and deserialize ordered hash', fn():void {
-    const expected_doc: {[key:string]: any} = { b: 1, a: 2, d: 3, c:4 };
+    const expected_doc: {[key:string]: any} = { z:3, a: 5, b:9 };
     const bson: Uint8Array = serialize(expected_doc)
     const doc: {[key:string]: any} = deserialize(bson)
     assertEquals(doc, expected_doc)
@@ -868,6 +939,31 @@ test({
     const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
     serializeInto(buf, doc)
     assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'serialized BSONRegExp deserializes as RegExp by default', fn():void {
+    const input_doc: {[key:string]: any}  = { rex: new BSONRegExp('test', 'i')};
+  const expected_doc: {[key:string]: any}  = { rex: new RegExp('test', 'i')};
+const bson: Uint8Array = serialize(input_doc)
+const doc: {[key:string]: any} = deserialize(bson)
+assertEquals(doc, expected_doc)
+const buf: Uint8Array = new Uint8Array(calculateObjectSize(input_doc))
+serializeInto(buf, input_doc)
+assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: 'optionally not promote BSONRegExp to RegExp', fn():void {
+  const expected_doc: {[key:string]: any}  = { rex: new BSONRegExp('test', 'i')};
+const bson: Uint8Array = serialize(expected_doc)
+const doc: {[key:string]: any} = deserialize(bson, {promoteValues: false})
+assertEquals(doc, expected_doc)
+const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+serializeInto(buf, doc)
+assertEquals(buf, bson);
   }
 });
 
@@ -942,27 +1038,6 @@ test({
     assertEquals(buf, bson);
   }
 });
-
-// test({
-//   name: 'always puts the id as the first item in a hash', fn():void{
-//     // var hash = { doc: { not_id: 1, _id: 2 } };
-//     const expected_doc: { [key:string]: any} = {not_id: 1, _id: new ObjectId()}
-//     // var serialized_data = BSON.serialize(hash);
-//     // 
-//     // var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(hash));
-//     // BSON.serializeWithBufferAndIndex(hash, serialized_data2);
-//     // assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-//     // 
-//     // var deserialized_data = BSON.deserialize(serialized_data);
-//     const bson: Uint8Array = serialize(expected_doc)
-//     const doc: {[key:string]: any} = deserialize(bson)
-//     assertEquals(doc, expected_doc)
-//     assertEquals(Object.keys(doc)[0], "_id")
-//     const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
-//     serializeInto(buf, doc)
-//     assertEquals(buf, bson);
-//   }
-// });
 
 test({
   name: 'serialize and dedserialize a code object', fn():void {
@@ -1061,6 +1136,8 @@ test({name:
       date: date,
       oid: oid,
       binary: new Binary(bin),
+      decimal: Decimal128.fromString("4444444444499994111111119999999.00419000419"),
+      int32: new Int32(32),
       int: 42,
       float: 33.3333,
       regexp: /regexp/,
@@ -1069,7 +1146,7 @@ test({name:
       where: new Code('this.a > i', { i: 1 }),
       dbref: new DBRef('namespace', oid, 'integration_tests_')
     };
-    const expected_doc: {[key:string]: any} = {...input_doc, binary: bin}
+    const expected_doc: {[key:string]: any} = {...input_doc, binary: bin, int32: 32}
     let bson: Uint8Array = serialize(input_doc)
     let doc: {[key:string]: any} = deserialize(bson)
     assertEquals(doc, expected_doc)
@@ -1238,391 +1315,62 @@ test({
   }
 });
 
-// /**
-//  * @ignore
-//  */
-// it('Should deserialize correctly', function(done) {
-//   var doc = {
-//     _id: new ObjectId('4e886e687ff7ef5e00000162'),
-//     str: 'foreign',
-//     type: 2,
-//     timestamp: ISODate('2011-10-02T14:00:08.383Z'),
-//     links: [
-//       'http://www.reddit.com/r/worldnews/comments/kybm0/uk_home_secretary_calls_for_the_scrapping_of_the/'
-//     ]
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-//   var doc2 = BSON.deserialize(serialized_data);
-// 
-//   expect(JSON.stringify(doc)).to.deep.equal(JSON.stringify(doc2));
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should correctly serialize and deserialize MinKey and MaxKey values', function(done) {
-//   var doc = {
-//     _id: new ObjectId('4e886e687ff7ef5e00000162'),
-//     minKey: new MinKey(),
-//     maxKey: new MaxKey()
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-//   var doc2 = BSON.deserialize(serialized_data);
-// 
-//   // Peform equality checks
-//   expect(JSON.stringify(doc)).to.equal(JSON.stringify(doc2));
-//   expect(doc._id.equals(doc2._id)).to.be.ok;
-//   // process.exit(0)
-//   expect(doc2.minKey instanceof MinKey).to.be.ok;
-//   expect(doc2.maxKey instanceof MaxKey).to.be.ok;
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should correctly serialize Double value', function(done) {
-//   var doc = {
-//     value: new Double(34343.2222)
-//   };
-// 
-//   var serialized_data = BSON.serialize(doc);
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-//   var doc2 = BSON.deserialize(serialized_data);
-// 
-//   expect(doc.value.valueOf(), doc2.value).to.be.ok;
-//   expect(doc.value.value, doc2.value).to.be.ok;
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('ObjectId should correctly create objects', function(done) {
-//   try {
-//     ObjectId.createFromHexString('000000000000000000000001');
-//     ObjectId.createFromHexString('00000000000000000000001');
-//     expect(false).to.be.ok;
-//   } catch (err) {
-//     expect(err != null).to.be.ok;
-//   }
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('ObjectId should correctly retrieve timestamp', function(done) {
-//   var testDate = new Date();
-//   var object1 = new ObjectId();
-//   expect(Math.floor(testDate.getTime() / 1000)).to.equal(
-//     Math.floor(object1.getTimestamp().getTime() / 1000)
-//   );
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should Correctly throw error on bsonparser errors', function(done) {
-//   var data = Buffer.alloc(3);
-//   var parser = BSON;
-// 
-//   expect(() => {
-//     parser.deserialize(data);
-//   }).to.throw();
-// 
-//   data = Buffer.alloc(5);
-//   data[0] = 0xff;
-//   data[1] = 0xff;
-//   expect(() => {
-//     parser.deserialize(data);
-//   }).to.throw();
-// 
-//   // Finish up
-//   done();
-// });
-// 
-// /**
-//  * A simple example showing the usage of BSON.calculateObjectSize function returning the number of BSON bytes a javascript object needs.
-//  *
-//  * @_class bson
-//  * @_function BSON.calculateObjectSize
-//  * @ignore
-//  */
-// it('Should correctly calculate the size of a given javascript object', function(done) {
-//   // Create a simple object
-//   var doc = { a: 1, func: function() {} };
-//   var bson = BSON;
-//   // Calculate the size of the object without serializing the function
-//   var size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: false
-//   });
-//   expect(12).to.equal(size);
-//   // Calculate the size of the object serializing the function
-//   size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: true
-//   });
-//   // Validate the correctness
-//   expect(37).to.equal(size);
-//   done();
-// });
-// 
-// /**
-//  * A simple example showing the usage of BSON.calculateObjectSize function returning the number of BSON bytes a javascript object needs.
-//  *
-//  * @_class bson
-//  * @_function calculateObjectSize
-//  * @ignore
-//  */
-// it('Should correctly calculate the size of a given javascript object using instance method', function(done) {
-//   // Create a simple object
-//   var doc = { a: 1, func: function() {} };
-//   // Create a BSON parser instance
-//   var bson = BSON;
-//   // Calculate the size of the object without serializing the function
-//   var size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: false
-//   });
-//   expect(12).to.equal(size);
-//   // Calculate the size of the object serializing the function
-//   size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: true
-//   });
-//   // Validate the correctness
-//   expect(37).to.equal(size);
-//   done();
-// });
-// 
-// /**
-//  * A simple example showing the usage of BSON.serializeWithBufferAndIndex function.
-//  *
-//  * @_class bson
-//  * @_function BSON.serializeWithBufferAndIndex
-//  * @ignore
-//  */
-// it('Should correctly serializeWithBufferAndIndex a given javascript object', function(done) {
-//   // Create a simple object
-//   var doc = { a: 1, func: function() {} };
-//   var bson = BSON;
-// 
-//   // Calculate the size of the document, no function serialization
-//   var size = bson.calculateObjectSize(doc, { serializeFunctions: false });
-//   var buffer = Buffer.alloc(size);
-//   // Serialize the object to the buffer, checking keys and not serializing functions
-//   var index = bson.serializeWithBufferAndIndex(doc, buffer, {
-//     serializeFunctions: false,
-//     index: 0
-//   });
-// 
-//   // Validate the correctness
-//   expect(size).to.equal(12);
-//   expect(index).to.equal(11);
-// 
-//   // Serialize with functions
-//   // Calculate the size of the document, no function serialization
-//   size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: true
-//   });
-//   // Allocate a buffer
-//   buffer = Buffer.alloc(size);
-//   // Serialize the object to the buffer, checking keys and not serializing functions
-//   index = bson.serializeWithBufferAndIndex(doc, buffer, {
-//     serializeFunctions: true,
-//     index: 0
-//   });
-// 
-//   // Validate the correctness
-//   expect(37).to.equal(size);
-//   expect(36).to.equal(index);
-//   done();
-// });
-// 
-// /**
-//  * A simple example showing the usage of BSON.serializeWithBufferAndIndex function.
-//  *
-//  * @_class bson
-//  * @_function serializeWithBufferAndIndex
-//  * @ignore
-//  */
-// it('Should correctly serializeWithBufferAndIndex a given javascript object using a BSON instance', function(done) {
-//   // Create a simple object
-//   var doc = { a: 1, func: function() {} };
-//   // Create a BSON parser instance
-//   var bson = BSON;
-//   // Calculate the size of the document, no function serialization
-//   var size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: false
-//   });
-//   // Allocate a buffer
-//   var buffer = Buffer.alloc(size);
-//   // Serialize the object to the buffer, checking keys and not serializing functions
-//   var index = bson.serializeWithBufferAndIndex(doc, buffer, {
-//     serializeFunctions: false
-//   });
-// 
-//   expect(size).to.equal(12);
-//   expect(index).to.equal(11);
-// 
-//   // Serialize with functions
-//   // Calculate the size of the document, no function serialization
-//   size = bson.calculateObjectSize(doc, {
-//     serializeFunctions: true
-//   });
-//   // Allocate a buffer
-//   buffer = Buffer.alloc(size);
-//   // Serialize the object to the buffer, checking keys and not serializing functions
-//   index = bson.serializeWithBufferAndIndex(doc, buffer, {
-//     serializeFunctions: true
-//   });
-//   // Validate the correctness
-//   expect(size).to.equal(37);
-//   expect(index).to.equal(36);
-// 
-//   done();
-// });
-// 
-// /**
-//  * A simple example showing the usage of BSON.serialize function returning serialized BSON Buffer object.
-//  *
-//  * @_class bson
-//  * @_function BSON.serialize
-//  * @ignore
-//  */
-// it('Should correctly serialize a given javascript object', function(done) {
-//   // Create a simple object
-//   var doc = { a: 1, func: function() {} };
-//   // Create a BSON parser instance
-//   var bson = BSON;
-// 
-//   var buffer = bson.serialize(doc, {
-//     checkKeys: true,
-//     serializeFunctions: false
-//   });
-// 
-//   expect(buffer.length).to.equal(12);
-// 
-//   // Serialize the object to a buffer, checking keys and serializing functions
-//   buffer = bson.serialize(doc, {
-//     checkKeys: true,
-//     serializeFunctions: true
-//   });
-//   // Validate the correctness
-//   expect(buffer.length).to.equal(37);
-// 
-//   done();
-// });
-// 
-// /**
-//  * A simple example showing the usage of BSON.serialize function returning serialized BSON Buffer object.
-//  *
-//  * @_class bson
-//  * @_function serialize
-//  * @ignore
-//  */
-// it('Should correctly serialize a given javascript object using a bson instance', function(done) {
-//   // Create a simple object
-//   var doc = { a: 1, func: function() {} };
-//   // Create a BSON parser instance
-//   var bson = BSON;
-// 
-//   // Serialize the object to a buffer, checking keys and not serializing functions
-//   var buffer = bson.serialize(doc, {
-//     checkKeys: true,
-//     serializeFunctions: false
-//   });
-//   // Validate the correctness
-//   expect(buffer.length).to.equal(12);
-// 
-//   // Serialize the object to a buffer, checking keys and serializing functions
-//   buffer = bson.serialize(doc, {
-//     checkKeys: true,
-//     serializeFunctions: true
-//   });
-//   // Validate the correctness
-//   expect(37).to.equal(buffer.length);
-// 
-//   done();
-// });
-// 
-// // /**
-// //  * A simple example showing the usage of BSON.deserialize function returning a deserialized Javascript function.
-// //  *
-// //  * @_class bson
-// //  * @_function BSON.deserialize
-// //  * @ignore
-// //  */
-// //  it('Should correctly deserialize a buffer using the BSON class level parser', function(done) {
-// //   // Create a simple object
-// //   var doc = {a: 1, func:function(){ console.log('hello world'); }}
-// //   // Create a BSON parser instance
-// //   var bson = BSON;
-// //   // Serialize the object to a buffer, checking keys and serializing functions
-// //   var buffer = bson.serialize(doc, {
-// //     checkKeys: true,
-// //     serializeFunctions: true
-// //   });
-// //   // Validate the correctness
-// //   expect(65).to.equal(buffer.length);
-// //
-// //   // Deserialize the object with no eval for the functions
-// //   var deserializedDoc = bson.deserialize(buffer);
-// //   // Validate the correctness
-// //   expect('object').to.equal(typeof deserializedDoc.func);
-// //   expect(1).to.equal(deserializedDoc.a);
-// //
-// //   // Deserialize the object with eval for the functions caching the functions
-// //   deserializedDoc = bson.deserialize(buffer, {evalFunctions:true, cacheFunctions:true});
-// //   // Validate the correctness
-// //   expect('function').to.equal(typeof deserializedDoc.func);
-// //   expect(1).to.equal(deserializedDoc.a);
-// //   done();
-// // }
-// 
-// // /**
-// //  * A simple example showing the usage of BSON instance deserialize function returning a deserialized Javascript function.
-// //  *
-// //  * @_class bson
-// //  * @_function deserialize
-// //  * @ignore
-// //  */
-// // it('Should correctly deserialize a buffer using the BSON instance parser', function(done) {
-// //   // Create a simple object
-// //   var doc = {a: 1, func:function(){ console.log('hello world'); }}
-// //   // Create a BSON parser instance
-// //   var bson = BSON;
-// //   // Serialize the object to a buffer, checking keys and serializing functions
-// //   var buffer = bson.serialize(doc, true, true, true);
-// //   // Validate the correctness
-// //   expect(65).to.equal(buffer.length);
-// //
-// //   // Deserialize the object with no eval for the functions
-// //   var deserializedDoc = bson.deserialize(buffer);
-// //   // Validate the correctness
-// //   expect('object').to.equal(typeof deserializedDoc.func);
-// //   expect(1).to.equal(deserializedDoc.a);
-// //
-// //   // Deserialize the object with eval for the functions caching the functions
-// //   deserializedDoc = bson.deserialize(buffer, {evalFunctions:true, cacheFunctions:true});
-// //   // Validate the correctness
-// //   expect('function').to.equal(typeof deserializedDoc.func);
-// //   expect(1).to.equal(deserializedDoc.a);
-// //   done();
-// // }
-// 
+
+
+test({
+  name: 'serialize and deserialize MinKey and MaxKey values', fn():void {
+    const expected_doc: {[key:string]: any}  = {     _id: new ObjectId('4e886e687ff7ef5e00000162'),
+        minKey: new MinKey(),
+        maxKey: new MaxKey()};
+  const bson: Uint8Array = serialize(expected_doc)
+  const doc: {[key:string]: any} = deserialize(bson)
+  assert(doc.minKey instanceof MinKey)
+  assert(doc.maxKey instanceof MaxKey)
+  assertEquals(JSON.stringify(doc), JSON.stringify(expected_doc))
+  const buf: Uint8Array = new Uint8Array(calculateObjectSize(doc))
+  serializeInto(buf, doc)
+  assertEquals(buf, bson);
+  }
+});
+
+test({
+  name: "deserializes min or max keys compare as expected", 
+  fn():void {
+    const expected_doc: {[key:string]: any}  = {     _id: new ObjectId('4e886e687ff7ef5e00000162'),
+        minKey: new MinKey(),
+        maxKey: new MaxKey()};
+  const bson: Uint8Array = serialize(expected_doc)
+  const doc: {[key:string]: any} = deserialize(bson)
+  for (let i: number = 1e6; i > -1; --i) {
+    let r : number = Math.floor(Math.random() * JS_INT_MAX)
+    assert(doc.minKey.value.lessThan(r * -1))
+    assert(doc.maxKey.value.greaterThan(r))
+    r = Math.floor(Math.random() * BSON_INT64_MAX)
+    assert(doc.minKey.value.lessThan(r * -1))
+    assert(doc.maxKey.value.greaterThan(r))
+  }
+  }
+})
+
+test({
+  name: 'deserialize throws on invalid bson', fn():void {
+  assertThrows(():void => { deserialize(new Uint8Array(3))})
+assertThrows(():void => { deserialize(new Uint8Array(5).fill(255, 0, 2))})
+  }
+});
+
+test({
+  name: 'should throw if invalid BSON types are input to BSON serializer', fn():void {
+    const badBsonType: { [key:string]: any} = { _bsontype: Symbol('bogus') }
+    const badDoc:  { [key:string]: any} = { bad: badBsonType };
+    const badArray = [badBsonType, badDoc];
+    const badMap: Map<string,any> = new Map([['a', badBsonType], ['b', badDoc], ['c', badArray]]);
+    assertThrows(() :void => { serialize(badDoc)})
+    assertThrows(() :void => { serialize(badArray)})
+    assertThrows(() :void => { serialize(badMap)})
+  }
+});
+
 // // /**
 // //  * A simple example showing the usage of BSON.deserializeStream function returning deserialized Javascript objects.
 // //  *
@@ -1721,332 +1469,5 @@ test({
 // 
 //   docs.forEach((doc, i) => expect(doc).to.deep.equal(parsedDocs[i]));
 // });
-// 
-// /**
-//  * @ignore
-//  */
-// it('ObjectId should have a correct cached representation of the hexString', function(done) {
-//   ObjectId.cacheHexString = true;
-//   var a = new ObjectId();
-//   var __id = a.__id;
-//   expect(__id).to.equal(a.toHexString());
-// 
-//   // hexString
-//   a = new ObjectId(__id);
-//   expect(__id).to.equal(a.toHexString());
-// 
-//   // fromHexString
-//   a = ObjectId.createFromHexString(__id);
-//   expect(a.__id).to.equal(a.toHexString());
-//   expect(__id).to.equal(a.toHexString());
-// 
-//   // number
-//   var genTime = a.generationTime;
-//   a = new ObjectId(genTime);
-//   __id = a.__id;
-//   expect(__id).to.equal(a.toHexString());
-// 
-//   // generationTime
-//   delete a.__id;
-//   a.generationTime = genTime;
-//   expect(__id).to.equal(a.toHexString());
-// 
-//   // createFromTime
-//   a = ObjectId.createFromTime(genTime);
-//   __id = a.__id;
-//   expect(__id).to.equal(a.toHexString());
-//   ObjectId.cacheHexString = false;
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should fail to create ObjectId due to illegal hex code', function(done) {
-//   try {
-//     new ObjectId('zzzzzzzzzzzzzzzzzzzzzzzz');
-//     expect(false).to.be.ok;
-//   } catch (err) {
-//     expect(true).to.be.ok;
-//   }
-// 
-//   expect(false).to.equal(ObjectId.isValid(null));
-//   expect(false).to.equal(ObjectId.isValid({}));
-//   expect(false).to.equal(ObjectId.isValid({ length: 12 }));
-//   expect(false).to.equal(ObjectId.isValid([]));
-//   expect(false).to.equal(ObjectId.isValid(true));
-//   expect(true).to.equal(ObjectId.isValid(0));
-//   expect(false).to.equal(ObjectId.isValid('invalid'));
-//   expect(true).to.equal(ObjectId.isValid('zzzzzzzzzzzz'));
-//   expect(false).to.equal(ObjectId.isValid('zzzzzzzzzzzzzzzzzzzzzzzz'));
-//   expect(true).to.equal(ObjectId.isValid('000000000000000000000000'));
-//   expect(true).to.equal(ObjectId.isValid(new ObjectId('thisis12char')));
-// 
-//   var tmp = new ObjectId();
-//   // Cloning tmp so that instanceof fails to fake import from different version/instance of the same npm package
-//   var objectIdLike = {
-//     id: tmp.id,
-//     toHexString: function() {
-//       return tmp.toHexString();
-//     }
-//   };
-// 
-//   expect(true).to.equal(tmp.equals(objectIdLike));
-//   expect(true).to.equal(tmp.equals(new ObjectId(objectIdLike)));
-//   expect(true).to.equal(ObjectId.isValid(objectIdLike));
-// 
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should correctly serialize the BSONRegExp type', function(done) {
-//   var doc = { regexp: new BSONRegExp('test', 'i') };
-//   var doc1 = { regexp: /test/i };
-//   var serialized_data = BSON.serialize(doc);
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   doc1 = BSON.deserialize(serialized_data);
-//   var regexp = new RegExp('test', 'i');
-//   expect(regexp).to.deep.equal(doc1.regexp);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should correctly deserialize the BSONRegExp type', function(done) {
-//   var doc = { regexp: new BSONRegExp('test', 'i') };
-//   var serialized_data = BSON.serialize(doc);
-// 
-//   var serialized_data2 = Buffer.alloc(BSON.calculateObjectSize(doc));
-//   BSON.serializeWithBufferAndIndex(doc, serialized_data2);
-//   assertBuffersEqual(done, serialized_data, serialized_data2, 0);
-// 
-//   var doc1 = BSON.deserialize(serialized_data, { bsonRegExp: true });
-//   expect(doc1.regexp instanceof BSONRegExp).to.be.ok;
-//   expect('test').to.equal(doc1.regexp.pattern);
-//   expect('i').to.equal(doc1.regexp.options);
-//   done();
-// });
-// 
-// /**
-//  * @ignore
-//  */
-// it('Should return boolean for ObjectId equality check', function(done) {
-//   var id = new ObjectId();
-//   expect(true).to.equal(id.equals(new ObjectId(id.toString())));
-//   expect(true).to.equal(id.equals(id.toString()));
-//   expect(false).to.equal(id.equals('1234567890abcdef12345678'));
-//   expect(false).to.equal(id.equals('zzzzzzzzzzzzzzzzzzzzzzzz'));
-//   expect(false).to.equal(id.equals('foo'));
-//   expect(false).to.equal(id.equals(null));
-//   expect(false).to.equal(id.equals(undefined));
-//   done();
-// });
-// 
-// it('should serialize ObjectIds from old bson versions', function() {
-//   // In versions 4.0.0 and 4.0.1, we used _bsontype="ObjectId" which broke
-//   // backwards compatibility with mongodb-core and other code. It was reverted
-//   // back to "ObjectID" (capital D) in later library versions.
-//   // The test below ensures that all three versions of Object ID work OK:
-//   // 1. The current version's class
-//   // 2. A simulation of the class from library 4.0.0
-//   // 3. The class currently in use by mongodb (not tested in browser where mongodb is unavailable)
-// 
-//   // test the old ObjectID class (in mongodb-core 3.1) because MongoDB drivers still return it
-//   function getOldBSON() {
-//     try {
-//       // do a dynamic resolve to avoid exception when running browser tests
-//       const file = require.resolve('mongodb-core');
-//       const oldModule = require(file).BSON;
-//       const funcs = new oldModule.BSON();
-//       oldModule.serialize = funcs.serialize;
-//       oldModule.deserialize = funcs.deserialize;
-//       return oldModule;
-//     } catch (e) {
-//       return BSON; // if mongo is unavailable, e.g. browser tests, just re-use new BSON
-//     }
-//   }
-// 
-//   const OldBSON = getOldBSON();
-//   const OldObjectID = OldBSON === BSON ? BSON.ObjectId : OldBSON.ObjectID;
-// 
-//   // create a wrapper simulating the old ObjectId class from v4.0.0
-//   class ObjectIdv400 {
-//     constructor() {
-//       this.oid = new ObjectId();
-//     }
-//     get id() {
-//       return this.oid.id;
-//     }
-//     toString() {
-//       return this.oid.toString();
-//     }
-//   }
-//   Object.defineProperty(ObjectIdv400.prototype, '_bsontype', { value: 'ObjectId' });
-// 
-//   // Array
-//   const array = [new ObjectIdv400(), new OldObjectID(), new ObjectId()];
-//   const deserializedArrayAsMap = BSON.deserialize(BSON.serialize(array));
-//   const deserializedArray = Object.keys(deserializedArrayAsMap).map(
-//     x => deserializedArrayAsMap[x]
-//   );
-//   expect(deserializedArray.map(x => x.toString())).to.eql(array.map(x => x.toString()));
-// 
-//   // Map
-//   const map = new Map();
-//   map.set('oldBsonType', new ObjectIdv400());
-//   map.set('reallyOldBsonType', new OldObjectID());
-//   map.set('newBsonType', new ObjectId());
-//   const deserializedMapAsObject = BSON.deserialize(BSON.serialize(map), { relaxed: false });
-//   const deserializedMap = new Map(
-//     Object.keys(deserializedMapAsObject).map(k => [k, deserializedMapAsObject[k]])
-//   );
-// 
-//   map.forEach((value, key) => {
-//     expect(deserializedMap.has(key)).to.be.true;
-//     const deserializedMapValue = deserializedMap.get(key);
-//     expect(deserializedMapValue.toString()).to.equal(value.toString());
-//   });
-// 
-//   // Object
-//   const record = {
-//     oldBsonType: new ObjectIdv400(),
-//     reallyOldBsonType: new OldObjectID(),
-//     newBsonType: new ObjectId()
-//   };
-//   const deserializedObject = BSON.deserialize(BSON.serialize(record));
-//   expect(deserializedObject).to.have.keys(['oldBsonType', 'reallyOldBsonType', 'newBsonType']);
-//   expect(record.oldBsonType.toString()).to.equal(deserializedObject.oldBsonType.toString());
-//   expect(record.newBsonType.toString()).to.equal(deserializedObject.newBsonType.toString());
-// });
-// 
-// it('should throw if invalid BSON types are input to BSON serializer', function() {
-//   const oid = new ObjectId('111111111111111111111111');
-//   const badBsonType = Object.assign({}, oid, { _bsontype: 'bogus' });
-//   const badDoc = { bad: badBsonType };
-//   const badArray = [oid, badDoc];
-//   const badMap = new Map([['a', badBsonType], ['b', badDoc], ['c', badArray]]);
-//   expect(() => BSON.serialize(badDoc)).to.throw();
-//   expect(() => BSON.serialize(badArray)).to.throw();
-//   expect(() => BSON.serialize(badMap)).to.throw();
-// });
 
-
-////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////7
-/////////////////////////////////////////////////////////////////////////
-
-
-
-
-// const corruptTestVectors : { [key:string]: any}[] = JSON.parse(
-//   decode(Deno.readFileSync("./bson_corrupt_test_vectors.json") ,"utf8")
-// )
-// 
-// const validTestVectors : { [key:string]: any}[] = JSON.parse(
-//   decode(Deno.readFileSync("./bson_valid_test_vectors.json") ,"utf8")
-// )
-// 
-// // Translate extended json to correctly typed doc
-// function translate(doc: { [key:string]: any}, object: { [key:string]: any}) : { [key:string]: any} {
-//   for (let name in doc) {
-//     if (
-//       typeof doc[name] === 'number' ||
-//       typeof doc[name] === 'string' ||
-//       typeof doc[name] === 'boolean'
-//     ) {
-//       object[name] = doc[name];
-//     } else if (Array.isArray(doc[name])) {
-//       object[name] = translate(doc[name], []);
-//     } else if (doc[name]['$numberLong']) {
-//       object[name] = Long.fromString(doc[name]['$numberLong']);
-//     } else if (doc[name]['$undefined']) {
-//       object[name] = null;
-//     } else if (doc[name]['$date']) {
-//       const date = new Date();
-//       date.setTime(parseInt(doc[name]['$date']['$numberLong'], 10));
-//       object[name] = date;
-//     } else if (doc[name]['$regexp']) {
-//       object[name] = new RegExp(doc[name]['$regexp'], doc[name]['$options'] || '');
-//     } else if (doc[name]['$oid']) {
-//       object[name] = new ObjectId(doc[name]['$oid']);
-//     } else if (doc[name]['$binary']) {
-//       object[name] = new Binary(doc[name]['$binary'], doc[name]['$type'] || 1);
-//     } else if (doc[name]['$timestamp']) {
-//       object[name] = Timestamp.fromBits(
-//         parseInt(doc[name]['$timestamp']['t'], 10),
-//         parseInt(doc[name]['$timestamp']['i'])
-//       );
-//     } else if (doc[name]['$ref']) {
-//       object[name] = new DBRef(doc[name]['$ref'], doc[name]['$id'], doc[name]['$db']);
-//     } else if (doc[name]['$minKey']) {
-//       object[name] = new MinKey();
-//     } else if (doc[name]['$maxKey']) {
-//       object[name] = new MaxKey();
-//     } else if (doc[name]['$code']) {
-//       object[name] = new Code(doc[name]['$code'], doc[name]['$scope'] || {});
-//     } else if (doc[name] != null && typeof doc[name] === 'object') {
-//       object[name] = translate(doc[name], {});
-//     }
-//   }
-// 
-//   return object;
-// }
-// 
-// test({
-//   name: "all corrupt BSON scenarios",
-//   fn(): void {
-//     for (const corruptTestVector of corruptTestVectors) {
-//       assertThrows(() => BSON.deserialize(encode(corruptTestVector.encoded, "hex")))
-//     }
-//   }
-// })
-// 
-// test({
-//   name: "all valid BSON scenarios",
-//   fn():void {
-//     /*
-//     // Iterate over all the results
-//     scenarios.documents.forEach(function(doc) {
-//       if (doc.skip) return;
-//       // Create a buffer containing the payload
-//       const expectedData = Buffer.from(doc.encoded, 'hex');
-//       // Get the expectedDocument
-//       const expectedDocument = translate(doc.document, {});
-//       // Serialize to buffer
-//       const buffer = BSON.serialize(expectedDocument);
-//       // Validate the output
-//       expect(expectedData.toString('hex')).to.equal(buffer.toString('hex'));
-//       // Attempt to deserialize
-//       const object = BSON.deserialize(buffer, { promoteLongs: false });
-//       // // Validate the object
-//       expect(JSON.stringify(expectedDocument)).to.deep.equal(JSON.stringify(object));
-//     });
-//     */
-//     let expectedBson: Uint8Array;
-//     let expectedDoc: { [key:string]: any};
-//     let bson: Uint8Array;
-//     let doc: { [key:string]: any};
-//     for (const validTestVector of validTestVectors) {
-//       // assertThrows(() => BSON.deserialize(encode(corruptTestVector.encoded, "hex")))
-//       expectedBson = encode(validTestVector.encoded, "hex");
-//       expectedDoc = translate(validTestVector.document, {});
-//       bson = BSON.serialize(expectedDoc);
-//       /////////
-//       console.error("bson", String(bson), "expectedBson", String(expectedBson));
-//       ////////
-//       assertEquals(bson, expectedBson);
-//       doc = BSON.deserialize(bson, {promoteLongs: false});
-//       assertEquals(doc, expectedDoc);
-//     }
-//   }
-// })
-
-
-runIfMain(import.meta)
+runIfMain(import.meta, { parallel: true})
