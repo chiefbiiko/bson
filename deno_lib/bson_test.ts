@@ -1,5 +1,5 @@
 import { test, runIfMain } from "https://deno.land/x/testing/mod.ts";
-import { assert, assertEquals, assertThrows } from "https://deno.land/x/testing/asserts.ts";
+import { assert, assertEquals, assertNotEquals, assertThrows } from "https://deno.land/x/testing/asserts.ts";
 import { Long } from "./long/mod.ts"
 import { Double } from "./double.ts"
 import { Timestamp } from "./timestamp.ts"
@@ -1372,21 +1372,42 @@ test({
 });
 
 test({
-  name: 'deserializeStream and calling marshalled functions', fn():void {
-    const expected_doc: { [key:string]:any} = {a: 1, func:function(){ return 419; }}
-    const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
-    assertEquals(bson.byteLength, 50)
-  let result: {index: number, docs: any[]} = deserializeStream(bson, 0, 1, [], 0);
-    assertEquals(result.index, 50)
-    assertEquals(result.docs.length, 1)
-    assertEquals(result.docs[0].a, 1)
-    assertEquals(typeof result.docs[0].func, "object")
-    result = deserializeStream(bson, 0, 1, [], 0, {evalFunctions: true, cacheFunctionsCrc32:true});
-    assertEquals(result.index, 50)
-    assertEquals(result.docs.length, 1)
-    assertEquals(result.docs[0].a, 1)
-    assertEquals(typeof result.docs[0].func, "function")
-    assertEquals(result.docs[0].func(), 419)
+  name: 'serializing functions', fn():void {
+  const expected_doc: { [key:string]:any} = {a: 1, func: function(){ return 419; }}
+  const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
+  const doc:{[key:string]:any} = deserialize(bson)
+  assertEquals(doc.a, expected_doc.a)
+  // The unmarshalled function has its enclosing object bound to it as this
+  assertNotEquals(doc.func, expected_doc.func)
+  assertEquals(typeof doc.func, "object")
+  assert(doc.func instanceof Code)
+  assertEquals(typeof doc.func.code, "string")
+  }
+})
+
+test({
+  name: 'evaling functions during deserialization', fn():void {
+  const expected_doc: { [key:string]:any} = {a: 1, func: function(){ return 419; }}
+  const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
+  const doc:{[key:string]:any} = deserialize(bson, {evalFunctions: true})
+  assertEquals(doc.a, expected_doc.a)
+  // The unmarshalled function has its enclosing object bound to it as this
+  assertNotEquals(doc.func, expected_doc.func)
+  assertEquals(typeof doc.func, "function")
+  assertEquals(doc.func(), 419)
+  }
+})
+
+test({
+  name: 'evaling and caching functions during deserialization', fn():void {
+  const expected_doc: { [key:string]:any} = {a: 1, func: function(){ return 419; }}
+  const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
+  const doc:{[key:string]:any} = deserialize(bson, {evalFunctions: true, cacheFunctionsCrc32: true})
+  assertEquals(doc.a, expected_doc.a)
+  // The unmarshalled function has its enclosing object bound to it as this
+  assertNotEquals(doc.func, expected_doc.func)
+  assertEquals(typeof doc.func, "function")
+  assertEquals(doc.func(), 419)
   }
 })
 
@@ -1394,12 +1415,12 @@ test({
   name: "unmarshalling (eval'ing) es6 object methods", fn():void {
     const expected_doc: { [key:string]:any} = {a: 1, func(){ return 419; }}
     const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
-  const result: {index: number, docs: any[]} = deserializeStream(bson, 0, 1, [], 0, {evalFunctions: true, cacheFunctionsCrc32:true});
-    assertEquals(result.index, 45)
-    assertEquals(result.docs.length, 1)
-    assertEquals(result.docs[0].a, 1)
-    assertEquals(typeof result.docs[0].func, "function")
-    assertEquals(result.docs[0].func(), 419)
+    const doc:{[key:string]:any} = deserialize(bson, {evalFunctions: true})
+    assertEquals(doc.a, expected_doc.a)
+    // The unmarshalled function has its enclosing object bound to it as this
+    assertNotEquals(doc.func, expected_doc.func)
+    assertEquals(typeof doc.func, "function")
+    assertEquals(doc.func(), 419)
   }
 })
 
