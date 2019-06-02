@@ -289,7 +289,7 @@ export function deserializeStream(bson: Uint8Array, bsonOffset: number=0, number
 
   // Return object containing end index of parsing and list of documents
   // return index;
-  return { index, docs:  docs.slice(docsOffset, docs.length) }
+  return { index, docs }
 }
 
 

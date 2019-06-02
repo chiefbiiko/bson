@@ -653,7 +653,7 @@ export interface DeserializationOptions {
   // // Return deprecated BSON symbols as BSONSymbol instances or instead (recommended) as a string?
   // bsonSymbol?: boolean,
   // Allows the buf to be larger than the parsed BSON object.
-  allowObjectSmallerThanBufferSize?: boolean
+  // allowObjectSmallerThanBufferSize?: boolean
   // Offset from which to start deserialization.
   // offset?: number,
   // Return raw bson buffer instead of parsing it?
@@ -679,7 +679,7 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
    fieldsAsRaw: null,
     // bsonRegExp: false,
     // bsonSymbol: false,
-    allowObjectSmallerThanBufferSize: false,
+    // allowObjectSmallerThanBufferSize: false,
     // offset: 0,
     raw: false,
      ...options
@@ -694,13 +694,13 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
     throw new TypeError(`bson size must be >= 5, is ${size}.`);
   }
 
-  if (options.allowObjectSmallerThanBufferSize && buf.length < size) {
-    throw new TypeError(`buf length ${buf.length} must be >= bson size ${size}.`);
-  }
-
-  if (!options.allowObjectSmallerThanBufferSize && buf.length !== size) {
-    throw new TypeError(`buf length ${buf.length} must === bson size ${size}.`);
-  }
+  // if (options.allowObjectSmallerThanBufferSize && buf.length < size) {
+  //   throw new TypeError(`buf length ${buf.length} must be >= bson size ${size}.`);
+  // }
+  // 
+  // if (!options.allowObjectSmallerThanBufferSize && buf.length !== size) {
+  //   throw new TypeError(`buf length ${buf.length} must === bson size ${size}.`);
+  // }
 
   if (size  > buf.length) {
     throw new TypeError(

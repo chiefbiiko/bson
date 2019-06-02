@@ -14,7 +14,7 @@ import {MaxKey} from "./max_key.ts"
 import { DBRef} from "./db_ref.ts"
 import {Binary} from "./binary.ts"
 import { serialize, serializeInto, deserialize, deserializeStream, calculateObjectSize, BSON_INT32_MAX, BSON_BINARY_SUBTYPE_BYTE_ARRAY, BSON_BINARY_SUBTYPE_USER_DEFINED, JS_INT_MAX, BSON_INT64_MAX } from "./bson.ts"
-import { encode } from "./transcoding.ts"
+import { encode, decode } from "./transcoding.ts"
 
 test({
   name: 'calculate the bson size of a given javascript object', fn():void {
@@ -1436,8 +1436,96 @@ test({
       bson.set(b, offset)
       offset += b.byteLength;
     }
-    const result: {index: number, docs: any[]} = deserializeStream(bson, 0, Infinity, [], 0, { allowObjectSmallerThanBufferSize: true});
-    result.docs.forEach((doc:any, i: number): void => { assertEquals(doc, expected_docs[i]) })
+    const result: {index: number, docs: any[]} = deserializeStream(bson);
+    assertEquals(result.index, bson.byteLength)
+      assertEquals(result.docs, expected_docs)
+  }
+});
+
+test({
+  name: 'deserialize multiple documents using deserializeStream and explicit count', fn():void {
+    const expected_docs: {[key:string]: any}[] = [{ foo: 'bar' }, { foo: 'baz' }, { foo: 'quux' }];
+    // concat buffers :\
+    const bson_arr: Uint8Array[] = expected_docs.map((d: { [key:string]: any}): Uint8Array => serialize(d))
+    const total: number = bson_arr.reduce((acc, cur): number =>acc + cur.byteLength, 0)
+    let offset: number = 0
+    const bson: Uint8Array = new Uint8Array(total)
+    for (const b of bson_arr) {
+      bson.set(b, offset)
+      offset += b.byteLength;
+    }
+    const result: {index: number, docs: any[]} = deserializeStream(bson, 0, 2, []);
+    assertEquals(result.docs, expected_docs.slice(0, 2))
+  }
+});
+
+test({
+  name: 'deserialize multiple documents using deserializeStream and offset into bson', fn():void {
+    const expected_docs: {[key:string]: any}[] = [{ foo: 'bar' }, { foo: 'baz' }, { foo: 'quux' }];
+    // concat buffers :\
+    const bson_arr: Uint8Array[] = expected_docs.map((d: { [key:string]: any}): Uint8Array => serialize(d))
+    const total: number = bson_arr.reduce((acc, cur): number =>acc + cur.byteLength, 0)
+    let offset: number = 0
+        let firstOffset: number;
+    const bson: Uint8Array = new Uint8Array(total)
+    for (let i: number = 0; i < bson_arr.length; i++) {
+      const b: Uint8Array = bson_arr[i]
+      bson.set(b, offset)
+      offset += b.byteLength;
+      if (i === 0) {
+        firstOffset = b.byteLength
+      }
+    }
+    const result: {index: number, docs: any[]} = deserializeStream(bson, firstOffset, 2, []);
+        assertEquals(result.index, bson.byteLength)
+    assertEquals(result.docs, expected_docs.slice(1))
+  }
+});
+
+test({
+  name: 'deserialize multiple documents using deserializeStream and offset into array', fn():void {
+    const expected_docs: {[key:string]: any}[] = [{ foo: 'bar' }, { foo: 'baz' }, { foo: 'quux' }];
+    // concat buffers :\
+    const bson_arr: Uint8Array[] = expected_docs.map((d: { [key:string]: any}): Uint8Array => serialize(d))
+    const total: number = bson_arr.reduce((acc, cur): number =>acc + cur.byteLength, 0)
+    let offset: number = 0
+    const bson: Uint8Array = new Uint8Array(total)
+    for (const b of bson_arr) {
+      bson.set(b, offset)
+      offset += b.byteLength;
+    }
+    const arr: any[] = ["holy"]
+    const result: {index: number, docs: any[]} = deserializeStream(bson, 0, 3, arr, 1);
+        assertEquals(result.index, bson.byteLength)
+    assert(result.docs === arr)
+    assertEquals(result.docs.length, 4)
+    assertEquals(result.docs[0], "holy")
+    assertEquals(result.docs.slice(1), expected_docs)
+  }
+});
+
+test({
+  name: 'fails serialization of illegal key values', fn():void {
+    const doc: {[key:string]:any} = {}
+    const key: Uint8Array = new Uint8Array(5)
+    key.fill(97, 0, 3)
+    doc[decode(key, "utf8")] = "b"
+    assertThrows((): void => { serialize(doc)})
+  }
+});
+
+
+test({
+  name: 'fails to serialize regexp with null bytes', fn():void {
+const doc: {[key:string]:any} = { rex: new RegExp('a\0b')}
+assertThrows((): void => { serialize(doc)})
+  }
+});
+
+test({
+  name: 'fails to serialize BSONRegExp with null bytes', fn():void {
+const doc: {[key:string]:any} = { rex: new BSONRegExp('a\0b')}
+assertThrows((): void => { serialize(doc)})
   }
 });
 

@@ -22,7 +22,7 @@ import { DBRef} from "./../db_ref.ts"
 import {Binary} from "./../binary.ts"
 import { DateTime } from "./../datetime.ts"
 // TODO: Get rid of below import with DataView
-import { writeIEEE754 } from "./../float_parser.ts";
+// import { writeIEEE754 } from "./../float_parser.ts";
 // import { Long } from "./../long/mod.ts";
 // import { Binary} from "./../binary.ts";
 import { normalizeFunctionString } from "./utils.ts"
@@ -777,7 +777,7 @@ index += encodedKey.byteLength;
   }
   /*output = */Object.assign(output, value.fields);
   // const endIndex: number = serializeAny(buf, output, false, index, depth + 1, serializeFunctions, false, null);
-    const endIndex: number = serializeAny(buf, output, index, {...options, checkKeys: false, depth: options.depth + 1/*, ignoreUndefined:false*/, path: null});
+    const endIndex: number = serializeAny(buf, output, index, {...options/*, checkKeys: false,*/, depth: options.depth + 1/*, ignoreUndefined:false*/, path: null});
 
   // Calculate object size
   const size = endIndex - startIndex;
@@ -792,7 +792,7 @@ index += encodedKey.byteLength;
 
 export interface SerializationOptions {
   depth?: number;
-  checkKeys?: boolean;
+  // checkKeys?: boolean;
   serializeFunctions?: boolean;
   // // Ignore / skip undefined values
   // ignoreUndefined?: boolean;
@@ -815,7 +815,7 @@ export function serializeAny(
   // path: { [key:string]: any}[],
   // undefinedAsNull: boolean
 ): number {
-  options = { depth: 0, checkKeys: false, serializeFunctions: false, /*ignoreUndefined: true,undefinedAsNull: true,*/  path: [],
+  options = { depth: 0,/* checkKeys: true,*/ serializeFunctions: false, /*ignoreUndefined: true,undefinedAsNull: true,*/  path: [],
     ...options}
   
   let startingIndex: number = offset
@@ -949,13 +949,13 @@ export function serializeAny(
           throw Error(`Key ${key} must not contain null bytes.`);
         }
 
-        if (options.checkKeys) {
+        // if (options.checkKeys) {
           if ('$' === key[0]) {
             throw Error(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
             throw Error(`Key ${key}  must not contain '.'.`);
           }
-        }
+        // }
       }
 
       if (type === 'string') {
@@ -1060,13 +1060,13 @@ export function serializeAny(
           throw new TypeError(`Key ${key}  must not contain null bytes.`);
         }
 
-        if (options.checkKeys) {
+        // if (options.checkKeys) {
           if ('$' === key[0]) {
             throw new TypeError(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
             throw new TypeError(`Key ${key} must not contain '.'.`);
           }
-        }
+        // }
       }
 
       if (type === 'string') {
