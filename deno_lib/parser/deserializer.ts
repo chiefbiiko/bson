@@ -603,14 +603,19 @@ function deserializeObject(buf: Uint8Array, offset: number, options: Deserializa
   return object;
 }
 
+/** Ensures a function string starts with a literal "function". */
+function prefixFunction(functionString: string): string {
+  return functionString.startsWith("function") ? functionString : `function ${functionString}`
+}
+
 /** Ensures eval is isolated. */
 function isolateEvalWithHash(functionCache: { [key:string]: Function}, hash: number | string, functionString: string, object: any): Function {
   // Contains the value we are going to set
-  const value: Function = null;
+  let value: Function = null;
 
   // Check for cache hit, eval if missing and return cached function
-  if (functionCache[hash]) {
-    eval('value = ' + functionString);
+  if (!functionCache[hash]) {
+    eval(`value = ${prefixFunction(functionString)}`);
     functionCache[hash] = value;
   }
 
@@ -621,9 +626,9 @@ function isolateEvalWithHash(functionCache: { [key:string]: Function}, hash: num
 /** Ensures eval is isolated. */
 function isolateEval(functionString: string): Function {
   // Contains the value we are going to set
-   const value: Function = null;
+   let value: Function = null;
   // Eval the function
-  eval('value = ' + functionString);
+  eval(`value = ${prefixFunction(functionString)}`);
   return value;
 }
 
@@ -674,7 +679,7 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
    fieldsAsRaw: null,
     // bsonRegExp: false,
     // bsonSymbol: false,
-    allowObjectSmallerThanBufferSize: true,
+    allowObjectSmallerThanBufferSize: false,
     // offset: 0,
     raw: false,
      ...options

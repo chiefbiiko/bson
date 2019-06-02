@@ -282,14 +282,14 @@ export function deserializeStream(bson: Uint8Array, bsonOffset: number=0, number
     // Update options with index
     // options.index = offset;
     // Parse the document at this point
-    docs[docsOffset + i] = deserialize(bson.subarray(index), options/*options*/ /*{...options, offset: index}*/);
+    docs[docsOffset + i] = deserialize(bson.subarray(index, bson.byteLength), options/*options*/ /*{...options, offset: index}*/);
     // Adjust index by the document size
     index += size;
   }
 
   // Return object containing end index of parsing and list of documents
   // return index;
-  return { index, docs }
+  return { index, docs:  docs.slice(docsOffset, docs.length) }
 }
 
 

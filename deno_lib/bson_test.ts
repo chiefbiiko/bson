@@ -1371,101 +1371,51 @@ test({
   }
 });
 
-// // /**
-// //  * A simple example showing the usage of BSON.deserializeStream function returning deserialized Javascript objects.
-// //  *
-// //  * @_class bson
-// //  * @_function BSON.deserializeStream
-// //  * @ignore
-// //  */
-// // it('Should correctly deserializeStream a buffer object', function(done) {
-// //   // Create a simple object
-// //   var doc = {a: 1, func:function(){ console.log('hello world'); }}
-// //   var bson = BSON;
-// //   // Serialize the object to a buffer, checking keys and serializing functions
-// //   var buffer = bson.serialize(doc, {
-// //     checkKeys: true,
-// //     serializeFunctions: true
-// //   });
-// //   // Validate the correctness
-// //   expect(65).to.equal(buffer.length);
-// //
-// //   // The array holding the number of retuned documents
-// //   var documents = new Array(1);
-// //   // Deserialize the object with no eval for the functions
-// //   var index = bson.deserializeStream(buffer, 0, 1, documents, 0);
-// //   // Validate the correctness
-// //   expect(65).to.equal(index);
-// //   expect(1).to.equal(documents.length);
-// //   expect(1).to.equal(documents[0].a);
-// //   expect('object').to.equal(typeof documents[0].func);
-// //
-// //   // Deserialize the object with eval for the functions caching the functions
-// //   // The array holding the number of retuned documents
-// //   var documents = new Array(1);
-// //   // Deserialize the object with no eval for the functions
-// //   var index = bson.deserializeStream(buffer, 0, 1, documents, 0, {evalFunctions:true, cacheFunctions:true});
-// //   // Validate the correctness
-// //   expect(65).to.equal(index);
-// //   expect(1).to.equal(documents.length);
-// //   expect(1).to.equal(documents[0].a);
-// //   expect('function').to.equal(typeof documents[0].func);
-// //   done();
-// // }
-// 
-// // /**
-// //  * A simple example showing the usage of BSON instance deserializeStream function returning deserialized Javascript objects.
-// //  *
-// //  * @_class bson
-// //  * @_function deserializeStream
-// //  * @ignore
-// //  */
-// // it('Should correctly deserializeStream a buffer object', function(done) {
-// //   // Create a simple object
-// //   var doc = {a: 1, func:function(){ console.log('hello world'); }}
-// //   // Create a BSON parser instance
-// //   var bson = BSON;
-// //   // Serialize the object to a buffer, checking keys and serializing functions
-// //   var buffer = bson.serialize(doc, true, true, true);
-// //   // Validate the correctness
-// //   expect(65).to.equal(buffer.length);
-// //
-// //   // The array holding the number of retuned documents
-// //   var documents = new Array(1);
-// //   // Deserialize the object with no eval for the functions
-// //   var index = bson.deserializeStream(buffer, 0, 1, documents, 0);
-// //   // Validate the correctness
-// //   expect(65).to.equal(index);
-// //   expect(1).to.equal(documents.length);
-// //   expect(1).to.equal(documents[0].a);
-// //   expect('object').to.equal(typeof documents[0].func);
-// //
-// //   // Deserialize the object with eval for the functions caching the functions
-// //   // The array holding the number of retuned documents
-// //   var documents = new Array(1);
-// //   // Deserialize the object with no eval for the functions
-// //   var index = bson.deserializeStream(buffer, 0, 1, documents, 0, {evalFunctions:true, cacheFunctions:true});
-// //   // Validate the correctness
-// //   expect(65).to.equal(index);
-// //   expect(1).to.equal(documents.length);
-// //   expect(1).to.equal(documents[0].a);
-// //   expect('function').to.equal(typeof documents[0].func);
-// //   done();
-// // }
+test({
+  name: 'deserializeStream and calling marshalled functions', fn():void {
+    const expected_doc: { [key:string]:any} = {a: 1, func:function(){ return 419; }}
+    const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
+    assertEquals(bson.byteLength, 50)
+  let result: {index: number, docs: any[]} = deserializeStream(bson, 0, 1, [], 0);
+    assertEquals(result.index, 50)
+    assertEquals(result.docs.length, 1)
+    assertEquals(result.docs[0].a, 1)
+    assertEquals(typeof result.docs[0].func, "object")
+    result = deserializeStream(bson, 0, 1, [], 0, {evalFunctions: true, cacheFunctionsCrc32:true});
+    assertEquals(result.index, 50)
+    assertEquals(result.docs.length, 1)
+    assertEquals(result.docs[0].a, 1)
+    assertEquals(typeof result.docs[0].func, "function")
+    assertEquals(result.docs[0].func(), 419)
+  }
+})
+
+test({
+  name: "unmarshalling (eval'ing) es6 object methods", fn():void {
+    const expected_doc: { [key:string]:any} = {a: 1, func(){ return 419; }}
+    const bson: Uint8Array = serialize(expected_doc, { serializeFunctions:true});
+  const result: {index: number, docs: any[]} = deserializeStream(bson, 0, 1, [], 0, {evalFunctions: true, cacheFunctionsCrc32:true});
+    assertEquals(result.index, 45)
+    assertEquals(result.docs.length, 1)
+    assertEquals(result.docs[0].a, 1)
+    assertEquals(typeof result.docs[0].func, "function")
+    assertEquals(result.docs[0].func(), 419)
+  }
+})
 
 test({
   name: 'deserialize multiple documents using deserializeStream', fn():void {
     const expected_docs: {[key:string]: any}[] = [{ foo: 'bar' }, { foo: 'baz' }, { foo: 'quux' }];
     // concat buffers :\
     const bson_arr: Uint8Array[] = expected_docs.map((d: { [key:string]: any}): Uint8Array => serialize(d))
-    const size: number = bson_arr.reduce((acc, cur): number =>acc + cur.byteLength, 0)
+    const total: number = bson_arr.reduce((acc, cur): number =>acc + cur.byteLength, 0)
     let offset: number = 0
-    const bson: Uint8Array = new Uint8Array(size)
+    const bson: Uint8Array = new Uint8Array(total)
     for (const b of bson_arr) {
       bson.set(b, offset)
       offset += b.byteLength;
     }
-    const result: {index: number, docs: any[]} = deserializeStream(bson);
+    const result: {index: number, docs: any[]} = deserializeStream(bson, 0, Infinity, [], 0, { allowObjectSmallerThanBufferSize: true});
     result.docs.forEach((doc:any, i: number): void => { assertEquals(doc, expected_docs[i]) })
   }
 });
