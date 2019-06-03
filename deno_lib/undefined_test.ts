@@ -9,7 +9,7 @@ const testVectors: { [key:string]: any} = JSON.parse(
 
 testVectors.valid
 .forEach(({ description, converted_bson, converted_extjson}:  { [key:string]: string}): void => {
-  // using the converted instead of the canonical items since this module
+  // Using the converted instead of the canonical items since this module
   // promotes deprecated undefineds to nulls by default (no opt-out)
   test({
     name: description,

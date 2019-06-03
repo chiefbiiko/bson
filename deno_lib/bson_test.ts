@@ -31,7 +31,7 @@ test({
 });
 
 test({
-  name: 'deserialize object', 
+  name: 'deserialize object',
   fn():void {
     const bson: Uint8Array = Uint8Array.from([
       95,
@@ -442,6 +442,311 @@ test({
   }
 });
 
+
+test({
+  name: 'deserialize object with all wrapper types', fn():void {
+     const bson: Uint8Array = Uint8Array.from([
+       26,
+       1,
+       0,
+       0,
+       7,
+       95,
+       105,
+       100,
+       0,
+       161,
+       190,
+       98,
+       75,
+       118,
+       169,
+       3,
+       0,
+       0,
+       3,
+       0,
+       0,
+       4,
+       97,
+       114,
+       114,
+       97,
+       121,
+       0,
+       26,
+       0,
+       0,
+       0,
+       16,
+       48,
+       0,
+       1,
+       0,
+       0,
+       0,
+       16,
+       49,
+       0,
+       2,
+       0,
+       0,
+       0,
+       16,
+       50,
+       0,
+       3,
+       0,
+       0,
+       0,
+       0,
+       2,
+       115,
+       116,
+       114,
+       105,
+       110,
+       103,
+       0,
+       6,
+       0,
+       0,
+       0,
+       104,
+       101,
+       108,
+       108,
+       111,
+       0,
+       3,
+       104,
+       97,
+       115,
+       104,
+       0,
+       19,
+       0,
+       0,
+       0,
+       16,
+       97,
+       0,
+       1,
+       0,
+       0,
+       0,
+       16,
+       98,
+       0,
+       2,
+       0,
+       0,
+       0,
+       0,
+       9,
+       100,
+       97,
+       116,
+       101,
+       0,
+       161,
+       190,
+       98,
+       75,
+       0,
+       0,
+       0,
+       0,
+       7,
+       111,
+       105,
+       100,
+       0,
+       161,
+       190,
+       98,
+       75,
+       90,
+       217,
+       18,
+       0,
+       0,
+       1,
+       0,
+       0,
+       5,
+       98,
+       105,
+       110,
+       97,
+       114,
+       121,
+       0,
+       7,
+       0,
+       0,
+       0,
+       2,
+       3,
+       0,
+       0,
+       0,
+       49,
+       50,
+       51,
+       16,
+       105,
+       110,
+       116,
+       0,
+       42,
+       0,
+       0,
+       0,
+       1,
+       102,
+       108,
+       111,
+       97,
+       116,
+       0,
+       223,
+       224,
+       11,
+       147,
+       169,
+       170,
+       64,
+       64,
+       11,
+       114,
+       101,
+       103,
+       101,
+       120,
+       112,
+       0,
+       102,
+       111,
+       111,
+       98,
+       97,
+       114,
+       0,
+       105,
+       0,
+       8,
+       98,
+       111,
+       111,
+       108,
+       101,
+       97,
+       110,
+       0,
+       1,
+       15,
+       119,
+       104,
+       101,
+       114,
+       101,
+       0,
+       25,
+       0,
+       0,
+       0,
+       12,
+       0,
+       0,
+       0,
+       116,
+       104,
+       105,
+       115,
+       46,
+       120,
+       32,
+       61,
+       61,
+       32,
+       51,
+       0,
+       5,
+       0,
+       0,
+       0,
+       0,
+       3,
+       100,
+       98,
+       114,
+       101,
+       102,
+       0,
+       37,
+       0,
+       0,
+       0,
+       2,
+       36,
+       114,
+       101,
+       102,
+       0,
+       5,
+       0,
+       0,
+       0,
+       116,
+       101,
+       115,
+       116,
+       0,
+       7,
+       36,
+       105,
+       100,
+       0,
+       161,
+       190,
+       98,
+       75,
+       2,
+       180,
+       1,
+       0,
+       0,
+       2,
+       0,
+       0,
+       0,
+       10,
+       110,
+       117,
+       108,
+       108,
+       0,
+       0
+     ])
+     const doc: { [key:string]: any} = deserialize(bson, { promoteValues: false})
+     assertEquals(doc.string, "hello")
+     assertEquals(doc.array, [new Int32(1), new Int32(2), new Int32(3)])
+     assertEquals(doc.hash.a, new Int32(1))
+     assertEquals(doc.hash.b, new Int32(2))
+     assert(doc.date instanceof DateTime)
+     assert(doc.oid instanceof  ObjectId)
+     assert(doc.binary instanceof Binary)
+     assertEquals(doc.int, new Int32(42))
+     assertEquals(doc.float, new Double(33.3333))
+     assert(doc.regexp instanceof BSONRegExp)
+     assert(doc.boolean)
+     assert(doc.where)
+     assertEquals(doc.dbref.constructor.name, "Object")
+     assert(!doc[null as any])
+   }
+});
+
 test({
   name: 'serialize and deserialize string', fn():void {
     const expected_doc: {[key:string]: any} = { hello: 'world' };
@@ -840,7 +1145,7 @@ test({
 });
 
 test({
-  name: 'convert object id to itself', 
+  name: 'convert object id to itself',
   fn():void {
     const a: ObjectId = new ObjectId();
     const b: ObjectId = new ObjectId(a);
@@ -1159,10 +1464,10 @@ test({name:
         serializeInto(buf, doc)
         assertEquals(buf, bson);
   }})
-  
 
 
-test({ 
+
+test({
   name: 'Should Correctly Serialize Complex Nested Object', fn():void {
       const expected_doc: {[key:string]: any} = {
       email: 'email@email.com',
@@ -1334,7 +1639,7 @@ test({
 });
 
 test({
-  name: "deserializes min or max keys compare as expected", 
+  name: "deserializes min or max keys compare as expected",
   fn():void {
     const expected_doc: {[key:string]: any}  = {     _id: new ObjectId('4e886e687ff7ef5e00000162'),
         minKey: new MinKey(),
@@ -1527,6 +1832,91 @@ test({
 const doc: {[key:string]:any} = { rex: new BSONRegExp('a\0b')}
 assertThrows((): void => { serialize(doc)})
   }
+});
+
+test({
+  name: 'detects cyclic dependency in nested objects', fn():void {
+    const doc: { [key:string]: any} = { b: {} };
+    doc.b.c = doc;
+    assertThrows((): void => { serialize(doc) })
+  }
+});
+
+test({name: 'Should correctly detect cyclic dependency in deeply nested objects', fn():void {
+  const doc: { [key:string]: any} = { b: { c: [{ d: {} }] } };
+  doc.b.c[0].d.a = doc;
+  doc.b.c = doc;
+  assertThrows((): void => { serialize(doc) })
+}});
+
+test({name: 'detects cyclic dependency in nested array', fn():void {
+  const doc: { [key:string]: any} =  { b: {} };
+  doc.b.c = [doc];
+  assertThrows((): void => { serialize(doc) })
+}});
+
+test({
+  name: 'handles toBSON function for an object', fn(): void{
+      const input_doc: {[key:string]: any} = {
+        hello: new ObjectId(),
+        a: 1,
+        toBSON(): { b: number } {
+          return { b: 1 };
+        }
+      };
+      const bson: Uint8Array = serialize(input_doc)
+      const doc: {[key:string]:any} = deserialize(bson)
+      assertEquals(doc, input_doc.toBSON())
+    }
+});
+
+test({
+  name: 'handles embedded toBSON function for an object', fn():void {
+      const input_doc: {[key:string]: any} = {
+        a: 1,
+        b: {
+          d:1,
+          toBSON(): { b: number } {
+            return { b: 1 };
+          }
+        }
+      };
+      const bson: Uint8Array = serialize(input_doc)
+      const doc: {[key:string]:any} = deserialize(bson)
+      assertEquals(doc.b, input_doc.b.toBSON())
+    }
+});
+
+test({
+  name: 'serialize with embedded non object returned by toBSON', fn():void{
+      const input_doc: {[key:string]: any} = {
+        a: 1,
+        b: {
+          d:1,
+          toBSON(): string {
+            return "hello";
+          }
+        }
+      };
+      const bson: Uint8Array = serialize(input_doc)
+      const doc: {[key:string]:any} = deserialize(bson)
+      assertEquals(doc.b, input_doc.b.toBSON())
+    }
+});
+
+test({
+  name: 'serialize fails if top level object returns a non object type', fn():void {
+    const input_doc: {[key:string]: any} = {
+      a: 1,
+      b: {
+        d:1
+      },
+      toBSON(): string {
+        return "hello";
+      }
+    };
+    assertThrows((): void => { serialize(input_doc)})
+    }
 });
 
 runIfMain(import.meta, { parallel: true})

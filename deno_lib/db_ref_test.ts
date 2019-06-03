@@ -3,11 +3,12 @@ import { assertEquals } from "https://deno.land/x/testing/asserts.ts";
 import { encode, decode} from "./transcoding.ts"
 import { serialize, deserialize } from "./bson.ts"
 
-const validTestVectors: { [key:string]: string}[] = JSON.parse(
+const testVectors: { [key:string]: any} = JSON.parse(
   decode(Deno.readFileSync("./../corpus/db_ref_test_vectors.json"),"utf8")
-).valid
+)
 
-validTestVectors.forEach(({ description, canonical_bson, canonical_extjson}:  { [key:string]: string}): void => {
+testVectors.valid
+.forEach(({ description, canonical_bson, canonical_extjson}:  { [key:string]: string}): void => {
   test({
     name: description,
     fn():void {

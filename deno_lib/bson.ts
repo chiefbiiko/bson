@@ -102,7 +102,7 @@ export function setInternalBufferSize(size: number): void {
 }
 
 /** Serializes a Javascript object. */
-export function serialize(object: any, options:SerializationOptions = { depth: 0, checkKeys: false, serializeFunctions: false,/* ignoreUndefined: true, undefinedAsNull: true,*/ path: [], minInternalBufferSize: MAXSIZE}): Uint8Array {
+export function serialize(object: any, options:SerializationOptions = { depth: 0, serializeFunctions: false, checkKeys: false,/* ignoreUndefined: true, undefinedAsNull: true,*/ path: [], minInternalBufferSize: MAXSIZE}): Uint8Array {
   // options = options || {};
   // // Unpack the options
   // const checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
@@ -151,7 +151,7 @@ export function serialize(object: any, options:SerializationOptions = { depth: 0
  * Serialize a Javascript object using a predefined Buffer and index into the
  * buf, useful when pre-allocating the space for serialization.
  */
-export function serializeInto(out: Uint8Array, object: any, offset: number = 0, options: SerializationOptions = { depth: 0, checkKeys: false, serializeFunctions: false, path: [], minInternalBufferSize: MAXSIZE}): number {
+export function serializeInto(out: Uint8Array, object: any, offset: number = 0, options: SerializationOptions = { depth: 0, serializeFunctions: false, checkKeys:false, path: [], minInternalBufferSize: MAXSIZE}): number {
   if (out === null) {
     throw new TypeError("The output buffer must not be null.")
   }

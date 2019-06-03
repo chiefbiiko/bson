@@ -1,0 +1,30 @@
+import { runIfMain } from "https://deno.land/x/testing/mod.ts";
+
+import "./binary_test.ts"
+import "./boolean_test.ts"
+import "./bson_test.ts"
+import "./code_test.ts"
+import "./code_with_scope_test.ts"
+import "./datetime_test.ts"
+import "./db_ref_test.ts"
+import "./decimal128_test.ts"
+import "./document_test.ts"
+import "./double_test.ts"
+import "./fnv1a_test.ts"
+import "./int32_test.ts"
+import "./int64_test.ts"
+import "./max_key_test.ts"
+import "./min_key_test.ts"
+// FAILS
+import "./multi_type_test.ts"
+import "./null_test.ts"
+import "./object_id_test.ts"
+import "./regexp_test.ts"
+import "./string_test.ts"
+import "./symbol_test.ts"
+import "./timestamp_test.ts"
+import "./top_test.ts"
+import "./undefined_test.ts"
+import "./validate_utf8_test.ts"
+
+runIfMain(import.meta, { parallel: false })

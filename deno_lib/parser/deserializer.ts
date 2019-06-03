@@ -162,7 +162,7 @@ function deserializeObject(buf: Uint8Array, offset: number, options: Deserializa
         buf[index++] |
         (buf[index++] << 8) |
         (buf[index++] << 16) |
-        (buf[index++] << 24);    
+        (buf[index++] << 24);
       if (options.promoteValues) {
         object[name] = new Date(new Long(lowBits, highBits).toNumber());
       } else {
@@ -653,7 +653,7 @@ export interface DeserializationOptions {
   // // Return deprecated BSON symbols as BSONSymbol instances or instead (recommended) as a string?
   // bsonSymbol?: boolean,
   // Allows the buf to be larger than the parsed BSON object.
-  // allowObjectSmallerThanBufferSize?: boolean
+  allowObjectSmallerThanBufferSize?: boolean
   // Offset from which to start deserialization.
   // offset?: number,
   // Return raw bson buffer instead of parsing it?
@@ -670,16 +670,17 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
   // const offset: number = index
   // Read the document size
   options = {
+        promoteValues: true,
     evalFunctions : false,
     cacheFunctions: false,
     cacheFunctionsCrc32: false,
     // promoteLongs: true,
     // promoteBuffers: false,
-    promoteValues: true,
+    allowObjectSmallerThanBufferSize: true,
    fieldsAsRaw: null,
     // bsonRegExp: false,
     // bsonSymbol: false,
-    // allowObjectSmallerThanBufferSize: false,
+
     // offset: 0,
     raw: false,
      ...options
@@ -697,15 +698,16 @@ export function deserialize(buf: Uint8Array, options: DeserializationOptions = {
   // if (options.allowObjectSmallerThanBufferSize && buf.length < size) {
   //   throw new TypeError(`buf length ${buf.length} must be >= bson size ${size}.`);
   // }
-  // 
-  // if (!options.allowObjectSmallerThanBufferSize && buf.length !== size) {
-  //   throw new TypeError(`buf length ${buf.length} must === bson size ${size}.`);
-  // }
 
-  if (size  > buf.length) {
-    throw new TypeError(
-      `bson size ${size} must be <= buf length ${buf.byteLength}.`
-    );
+  if (!options.allowObjectSmallerThanBufferSize  && buf.byteLength !== size) {
+    throw new TypeError(`The buffer's byte length ${buf.length} must equal bson size ${size}.`);
+  }
+
+  if (buf.byteLength < size) {
+    // throw new TypeError(
+    //   `bson size ${size} must be <= buf length ${buf.byteLength}.`
+    // );
+    throw new TypeError(`The buffer's byte length ${buf.byteLength} must be >= bson size ${size}.`);
   }
 
   // Illegal end value

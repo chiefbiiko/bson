@@ -26,7 +26,7 @@ testVectors.decodeErrors.forEach(({ description, bson }:  { [key:string]: string
   test({
     name: description,
     fn():void {
-      assertThrows(() => deserialize(encode(bson, "hex"), { promoteValues: false }))
+      assertThrows(() => deserialize(encode(bson, "hex"), { promoteValues: false, allowObjectSmallerThanBufferSize: false }))
     }
   })
 })

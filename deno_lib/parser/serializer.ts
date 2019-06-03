@@ -767,7 +767,7 @@ index += encodedKey.byteLength;
   // return index;
 
   let startIndex: number = index;
-  
+
   const output: { [key: string]: any} = {
     $ref: value.collection || value.namespace, // "namespace" was what library 1.x called "collection"
     $id: value.oid
@@ -792,7 +792,7 @@ index += encodedKey.byteLength;
 
 export interface SerializationOptions {
   depth?: number;
-  // checkKeys?: boolean;
+  checkKeys?: boolean;
   serializeFunctions?: boolean;
   // // Ignore / skip undefined values
   // ignoreUndefined?: boolean;
@@ -815,9 +815,9 @@ export function serializeAny(
   // path: { [key:string]: any}[],
   // undefinedAsNull: boolean
 ): number {
-  options = { depth: 0,/* checkKeys: true,*/ serializeFunctions: false, /*ignoreUndefined: true,undefinedAsNull: true,*/  path: [],
+  options = { depth: 0, checkKeys: false, serializeFunctions: false, /*ignoreUndefined: true,undefinedAsNull: true,*/  path: [],
     ...options}
-  
+
   let startingIndex: number = offset
   const path: any[] = options.path || [];
 
@@ -850,7 +850,7 @@ export function serializeAny(
         index = serializeBoolean(buf, key, value, index/*, true*/);
       } else if (value instanceof Date ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index/*, true*/);
-      } 
+      }
       // else if (value === undefined && !options.undefinedAsNull) {
         // index = serializeUndefined(buf, key, value, index/*, true*/);
       // }
@@ -949,13 +949,13 @@ export function serializeAny(
           throw Error(`Key ${key} must not contain null bytes.`);
         }
 
-        // if (options.checkKeys) {
+        if (options.checkKeys) {
           if ('$' === key[0]) {
             throw Error(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
             throw Error(`Key ${key}  must not contain '.'.`);
           }
-        // }
+        }
       }
 
       if (type === 'string') {
@@ -969,7 +969,7 @@ export function serializeAny(
       }
       //  else if (value === undefined && !options.undefinedAsNull) {
       //   index = serializeUndefined(buf, key, value, index/*, true*/);
-      // } 
+      // }
       else if (value === null || value === undefined/* && options.undefinedAsNull*/) {
         index = serializeNull(buf, key, value, index/*, true*/);
       } else if (bsontype === 'ObjectId' || bsontype === 'ObjectID') {
@@ -1060,13 +1060,13 @@ export function serializeAny(
           throw new TypeError(`Key ${key}  must not contain null bytes.`);
         }
 
-        // if (options.checkKeys) {
+        if (options.checkKeys) {
           if ('$' === key[0]) {
             throw new TypeError(`Key ${key} must not start with '$'.`);
           } else if (~key.indexOf('.')) {
             throw new TypeError(`Key ${key} must not contain '.'.`);
           }
-        // }
+        }
       }
 
       if (type === 'string') {
@@ -1077,10 +1077,10 @@ export function serializeAny(
         index = serializeBoolean(buf, key, value, index);
       } else if (value instanceof Date  ||value instanceof DateTime/* || isDate(value)*/) {
         index = serializeDate(buf, key, value, index);
-      }  
+      }
       // else if (value === undefined && !options.undefinedAsNull) {
       //   index = serializeUndefined(buf, key, value, index/*, true*/);
-      // } 
+      // }
       else if (value === null || value === undefined/* && options.undefinedAsNull*/) {
         index = serializeNull(buf, key, value, index/*, true*/);
       } else if (bsontype === 'ObjectId' || bsontype === 'ObjectID') {
