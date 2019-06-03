@@ -1,5 +1,6 @@
 import { runIfMain } from "https://deno.land/x/testing/mod.ts";
 
+import "./long/test.ts"
 import "./binary_test.ts"
 import "./boolean_test.ts"
 import "./bson_test.ts"
