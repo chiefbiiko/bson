@@ -1,11 +1,9 @@
-import { Long } from "./long/mod.ts";
-
 /** A class representation of the BSON MaxKey type. */
 export class MaxKey {
   readonly _bsontype: string = "MaxKey";
 
   /** bigint bc its numeric value works with number's comparison operators. */
-  readonly value: Long = Long.fromString("9223372036854775807")
+  readonly value: number = Infinity;
 
   /** Creates a maxkey from its extended JSON representation. */
   static fromExtendedJSON(): MaxKey {
@@ -24,6 +22,6 @@ export class MaxKey {
 
   /** Extended JSON represtation of a maxkey. */
   toExtendedJSON(): { $maxKey: number } {
-    return { $maxKey: this.value.toNumber() };
+    return { $maxKey: this.value };
   }
 }

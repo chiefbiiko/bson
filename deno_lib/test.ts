@@ -28,4 +28,4 @@ import "./top_test.ts"
 import "./undefined_test.ts"
 import "./validate_utf8_test.ts"
 
-runIfMain(import.meta, { parallel: false })
+runIfMain(import.meta, { parallel: false, skip: /All BSON types/  })

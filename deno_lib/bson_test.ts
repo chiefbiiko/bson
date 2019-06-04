@@ -1648,11 +1648,11 @@ test({
   const doc: {[key:string]: any} = deserialize(bson)
   for (let i: number = 1e6; i > -1; --i) {
     let r : number = Math.floor(Math.random() * JS_INT_MAX)
-    assert(doc.minKey.value.lessThan(r * -1))
-    assert(doc.maxKey.value.greaterThan(r))
+    assert(doc.minKey.value < r * -1)
+    assert(doc.maxKey.value > r)
     r = Math.floor(Math.random() * BSON_INT64_MAX)
-    assert(doc.minKey.value.lessThan(r * -1))
-    assert(doc.maxKey.value.greaterThan(r))
+    assert(doc.minKey.value < r * -1)
+    assert(doc.maxKey.value > r)
   }
   }
 })
