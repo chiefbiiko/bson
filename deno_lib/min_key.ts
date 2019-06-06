@@ -2,8 +2,7 @@
 export class MinKey {
   readonly _bsontype: string = "MinKey";
 
-  /** bigint bc its numeric value works with number's comparison operators. */
-  readonly value: number = -Infinity;
+  readonly value: number = 1;
 
   /** Creates a minkey from its extended JSON representation. */
   static fromExtendedJSON(): MinKey {

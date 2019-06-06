@@ -1620,8 +1620,6 @@ test({
   }
 });
 
-
-
 test({
   name: 'serialize and deserialize MinKey and MaxKey values', fn():void {
     const expected_doc: {[key:string]: any}  = {     _id: new ObjectId('4e886e687ff7ef5e00000162'),
@@ -1637,25 +1635,6 @@ test({
   assertEquals(buf, bson);
   }
 });
-
-test({
-  name: "deserializes min or max keys compare as expected",
-  fn():void {
-    const expected_doc: {[key:string]: any}  = {     _id: new ObjectId('4e886e687ff7ef5e00000162'),
-        minKey: new MinKey(),
-        maxKey: new MaxKey()};
-  const bson: Uint8Array = serialize(expected_doc)
-  const doc: {[key:string]: any} = deserialize(bson)
-  for (let i: number = 1e6; i > -1; --i) {
-    let r : number = Math.floor(Math.random() * JS_INT_MAX)
-    assert(doc.minKey.value < r * -1)
-    assert(doc.maxKey.value > r)
-    r = Math.floor(Math.random() * BSON_INT64_MAX)
-    assert(doc.minKey.value < r * -1)
-    assert(doc.maxKey.value > r)
-  }
-  }
-})
 
 test({
   name: 'deserialize throws on invalid bson', fn():void {

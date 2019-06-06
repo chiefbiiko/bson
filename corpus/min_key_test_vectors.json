@@ -6,7 +6,7 @@
         {
             "description": "Minkey",
             "canonical_bson": "08000000FF610000",
-            "canonical_extjson": "{\"a\" : {\"$minKey\" : -9223372036854776000}}"
+            "canonical_extjson": "{\"a\" : {\"$minKey\" : 1}}"
         }
     ]
 }

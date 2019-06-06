@@ -3,7 +3,7 @@ export class MaxKey {
   readonly _bsontype: string = "MaxKey";
 
   /** bigint bc its numeric value works with number's comparison operators. */
-  readonly value: number = Infinity;
+  readonly value: number = 1;
 
   /** Creates a maxkey from its extended JSON representation. */
   static fromExtendedJSON(): MaxKey {
